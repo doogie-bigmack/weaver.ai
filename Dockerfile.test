@@ -1,0 +1,23 @@
+FROM python:3.12-slim
+
+WORKDIR /app
+
+# Copy only requirements first for better caching
+COPY pyproject.toml .
+
+# Install minimal dependencies
+RUN pip install --no-cache-dir \
+    fastapi \
+    pydantic \
+    pyyaml \
+    pyjwt \
+    pytest \
+    pytest-asyncio
+
+# Copy application code
+COPY weaver_ai/ weaver_ai/
+COPY tests/ tests/
+COPY demo_event_mesh.py .
+
+# Run tests
+CMD ["python", "-m", "pytest", "tests/unit/test_event_mesh.py", "-v", "-s"]
