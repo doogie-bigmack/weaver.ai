@@ -9,6 +9,7 @@ COPY pyproject.toml .
 RUN pip install --no-cache-dir \
     fastapi \
     pydantic \
+    pydantic-settings \
     pyyaml \
     pyjwt \
     pytest \

@@ -69,3 +69,7 @@ class BaseModel:
 
 class BaseSettings(BaseModel):
     pass
+
+
+class ConfigDict(dict):
+    pass
