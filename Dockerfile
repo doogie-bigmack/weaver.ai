@@ -20,5 +20,8 @@ RUN pip install --upgrade pip && \
     pip install pytest pytest-asyncio && \
     pip install -e .
 
-# Run tests by default
-CMD ["python", "-m", "pytest", "tests/", "-v", "--tb=short"]
+# Expose port
+EXPOSE 8000
+
+# Run the server
+CMD ["python", "-m", "weaver_ai.main", "--host", "0.0.0.0", "--port", "8000"]
