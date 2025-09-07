@@ -12,6 +12,7 @@ This demonstrates:
 import asyncio
 
 from pydantic import BaseModel
+
 from weaver_ai.events import EventMesh, EventMetadata
 
 

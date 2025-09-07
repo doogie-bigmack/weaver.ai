@@ -6,8 +6,8 @@ import asyncio
 
 import pytest
 import pytest_asyncio
-
 from pydantic import BaseModel
+
 from weaver_ai.events import AccessPolicy, EventMesh, EventMetadata
 
 

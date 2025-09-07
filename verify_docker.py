@@ -10,6 +10,7 @@ import sys
 sys.path.insert(0, "/app")
 
 from pydantic import BaseModel
+
 from weaver_ai.events import EventMesh
 
 
