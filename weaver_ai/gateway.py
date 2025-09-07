@@ -54,7 +54,7 @@ async def whoami(request: Request):
 @app.post("/ask")
 async def ask(request: Request):
     user = enforce_limit(request)
-    data = request.json or {}
+    data = await request.json() if hasattr(request, 'json') and callable(request.json) else {}
     req = QueryRequest(**data)
     policies = load_guardrails()
     policy.input_guard(req.query, policies)
