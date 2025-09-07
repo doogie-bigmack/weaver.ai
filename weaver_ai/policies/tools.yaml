@@ -1,0 +1,4 @@
+python_eval:
+  required_scopes:
+    - tool:python_eval
+  sensitivity: low

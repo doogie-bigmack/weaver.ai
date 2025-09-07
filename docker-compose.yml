@@ -1,0 +1,14 @@
+version: "3.9"
+services:
+  gateway:
+    build: .
+    image: weaver-ai:dev
+    ports: ["8000:8000"]
+    environment:
+      WEAVER_TELEMETRY_ENABLED: "false"
+      WEAVER_AUTH_MODE: "api_key"
+      WEAVER_ALLOWED_API_KEYS: '["dev-key"]'
+    security_opt: ["no-new-privileges:true"]
+    read_only: true
+    cap_drop: ["ALL"]
+    tmpfs: ["/tmp:size=64m,mode=1777"]
