@@ -13,7 +13,9 @@ def create_client() -> TestClient:
 
 def test_gateway_smoke():
     client = create_client()
-    r = client.post("/ask", headers={"x-api-key": "dev-key"}, json={"user_id": "u", "query": "hi"})
+    r = client.post(
+        "/ask", headers={"x-api-key": "dev-key"}, json={"user_id": "u", "query": "hi"}
+    )
     assert r.status_code == 200
     data = r.json()
     assert data["answer"]

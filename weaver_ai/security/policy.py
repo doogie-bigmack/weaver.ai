@@ -24,7 +24,9 @@ def input_guard(text: str, policies: dict[str, Any]) -> None:
             raise HTTPException(status_code=400, detail="blocked")
 
 
-def output_guard(text: str, policies: dict[str, Any], *, redact: bool = True) -> GuardrailDecision:
+def output_guard(
+    text: str, policies: dict[str, Any], *, redact: bool = True
+) -> GuardrailDecision:
     if redact:
         for regex in policies.get("pii_regexes", []):
             text = re.sub(regex, "[redacted]", text)

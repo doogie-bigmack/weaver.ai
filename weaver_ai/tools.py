@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import ast
 import operator as op
-from typing import Any, Dict
+from typing import Any
 
 from pydantic import BaseModel
 
-from .mcp import MCPServer, MCPClient, ToolSpec
+from .mcp import MCPServer, ToolSpec
 
 
 class Tool(BaseModel):
@@ -34,7 +34,9 @@ class PythonEvalTool(Tool):
 
     def _eval(self, node: ast.AST) -> Any:
         if isinstance(node, ast.BinOp):
-            return self._ops[type(node.op)](self._eval(node.left), self._eval(node.right))
+            return self._ops[type(node.op)](
+                self._eval(node.left), self._eval(node.right)
+            )
         if isinstance(node, ast.Num):  # type: ignore[attr-defined]
             return node.n
         raise ValueError("unsupported expression")
@@ -44,10 +46,7 @@ def create_python_eval_server(server_id: str, key: str) -> MCPServer:
     server = MCPServer(server_id, key)
     tool = PythonEvalTool()
     spec = ToolSpec(
-        name=tool.name,
-        description=tool.description,
-        input_schema={},
-        output_schema={}
+        name=tool.name, description=tool.description, input_schema={}, output_schema={}
     )
     server.add_tool(spec, lambda args: tool.call(expr=args["expr"]))
     return server

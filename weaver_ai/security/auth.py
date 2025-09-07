@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import List
-
 import jwt
 from fastapi import HTTPException
 from pydantic import BaseModel
@@ -12,8 +10,8 @@ from ..settings import AppSettings
 class UserContext(BaseModel):
     tenant_id: str | None = None
     user_id: str
-    roles: List[str] = []
-    scopes: List[str] = []
+    roles: list[str] = []
+    scopes: list[str] = []
 
 
 def authenticate(headers: dict[str, str], settings: AppSettings) -> UserContext:

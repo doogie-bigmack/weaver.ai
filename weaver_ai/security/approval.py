@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from collections import deque
-from typing import Deque, Dict
 
 from pydantic import BaseModel
 
@@ -12,7 +11,7 @@ class PendingTool(BaseModel):
     user_id: str
 
 
-_QUEUE: Deque[PendingTool] = deque()
+_QUEUE: deque[PendingTool] = deque()
 
 
 def submit(tool: str, args: dict, user_id: str) -> None:

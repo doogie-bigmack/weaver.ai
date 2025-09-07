@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, Request
 
 from .agent import AgentOrchestrator
-from .model_router import StubModel
 from .mcp import MCPClient
-from .models import QueryRequest, QueryResponse, Citation
+from .model_router import StubModel
+from .models import Citation, QueryRequest, QueryResponse
 from .security import auth, policy, ratelimit
 from .settings import AppSettings
 from .tools import create_python_eval_server
@@ -54,7 +54,11 @@ async def whoami(request: Request):
 @app.post("/ask")
 async def ask(request: Request):
     user = enforce_limit(request)
-    data = request.json or {}
+    data = (
+        await request.json()
+        if hasattr(request, "json") and callable(request.json)
+        else {}
+    )
     req = QueryRequest(**data)
     policies = load_guardrails()
     policy.input_guard(req.query, policies)

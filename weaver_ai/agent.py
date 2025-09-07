@@ -2,11 +2,9 @@ from __future__ import annotations
 
 import re
 import time
-from typing import List, Sequence
 
-
-from .model_router import ModelRouter, StubModel
 from .mcp import MCPClient
+from .model_router import ModelRouter
 from .reward import compute_reward
 from .security import rbac
 from .settings import AppSettings
@@ -26,10 +24,10 @@ class AgentOrchestrator:
         self.mcp = mcp
         self.verifier = verifier
 
-    def ask(self, query: str, user_id: str, ctx) -> tuple[str, List[str], dict]:
+    def ask(self, query: str, user_id: str, ctx) -> tuple[str, list[str], dict]:
         start = time.time()
-        citations: List[str] = []
-        tools_used: List[str] = []
+        citations: list[str] = []
+        tools_used: list[str] = []
         if re.fullmatch(r"\s*\d+\s*[\+\-\*\/]\s*\d+\s*", query):
             rbac.check_access(ctx, "tool:python_eval", roles_path=self.settings_roles())
             result = self.mcp.call("python_eval", {"expr": query})
