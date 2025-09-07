@@ -4,21 +4,20 @@ from __future__ import annotations
 
 import asyncio
 import time
-from typing import List
 
 import pytest
 import pytest_asyncio
-from pydantic import BaseModel
 
-from weaver_ai.events import EventMesh, AccessPolicy
+from pydantic import BaseModel
+from weaver_ai.events import AccessPolicy, EventMesh
 
 
 # Define workflow event types
 class SalesData(BaseModel):
     """Raw sales data event."""
     quarter: str
-    sales: List[float]
-    regions: List[str]
+    sales: list[float]
+    regions: list[str]
 
 
 class SalesAnalysis(BaseModel):
@@ -27,7 +26,7 @@ class SalesAnalysis(BaseModel):
     total_sales: float
     average_sale: float
     top_region: str
-    insights: List[str]
+    insights: list[str]
 
 
 class QuarterlyReport(BaseModel):
@@ -145,7 +144,7 @@ class TestEventMeshIntegration:
                     break
         
         # Start all agents
-        agents = await asyncio.gather(
+        await asyncio.gather(
             asyncio.create_task(analyst_agent()),
             asyncio.create_task(reporter_agent()),
             asyncio.create_task(notifier_agent()),
@@ -368,7 +367,7 @@ class TestEventMeshIntegration:
         async def subscriber(sub_id: int):
             """Individual subscriber."""
             count = 0
-            async for event in mesh.subscribe(
+            async for _ in mesh.subscribe(
                 [SalesData],
                 agent_id=f"sub_{sub_id}"
             ):

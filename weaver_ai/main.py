@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import argparse
 
-from .gateway import app
-
 
 def main() -> None:
     parser = argparse.ArgumentParser()

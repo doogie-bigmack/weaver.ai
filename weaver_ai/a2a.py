@@ -1,9 +1,7 @@
 from __future__ import annotations
 
 import json
-import time
-from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import jwt
@@ -67,5 +65,5 @@ def verify(envelope: A2AEnvelope, public_key: str) -> bool:
 
 
 def check_timestamp(envelope: A2AEnvelope, skew_seconds: int = 30) -> bool:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     return abs((now - envelope.created_at).total_seconds()) <= skew_seconds

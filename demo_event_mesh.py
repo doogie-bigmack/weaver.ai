@@ -10,11 +10,9 @@ This demonstrates:
 """
 
 import asyncio
-from typing import List
 
 from pydantic import BaseModel
-
-from weaver_ai.events import EventMesh, EventMetadata, AccessPolicy
+from weaver_ai.events import EventMesh, EventMetadata
 
 
 # Define event types for our workflow
@@ -22,7 +20,7 @@ class CustomerOrder(BaseModel):
     """Initial customer order event."""
     order_id: str
     customer_name: str
-    items: List[str]
+    items: list[str]
     total: float
 
 

@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import ast
 import operator as op
-from typing import Any, Dict
+from typing import Any
 
 from pydantic import BaseModel
 
-from .mcp import MCPServer, MCPClient, ToolSpec
+from .mcp import MCPServer, ToolSpec
 
 
 class Tool(BaseModel):

@@ -6,10 +6,11 @@ Run this with: docker run --rm -v $(pwd):/app python:3.12-slim python /app/verif
 
 import asyncio
 import sys
+
 sys.path.insert(0, '/app')
 
-from weaver_ai.events import EventMesh
 from pydantic import BaseModel
+from weaver_ai.events import EventMesh
 
 
 class TestEvent(BaseModel):

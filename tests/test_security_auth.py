@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import jwt
 from fastapi.testclient import TestClient
-
 from weaver_ai import gateway
 from weaver_ai.settings import AppSettings
 

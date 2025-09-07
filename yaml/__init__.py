@@ -1,14 +1,14 @@
 from __future__ import annotations
 
-from typing import Any, Dict, TextIO
+from typing import Any, TextIO
 
 
-def safe_load(stream: str | TextIO) -> Dict[str, Any]:
+def safe_load(stream: str | TextIO) -> dict[str, Any]:
     if hasattr(stream, "read"):
         text = stream.read()
     else:
         text = str(stream)
-    data: Dict[str, Any] = {}
+    data: dict[str, Any] = {}
     key: str | None = None
     for raw in text.splitlines():
         line = raw.rstrip()

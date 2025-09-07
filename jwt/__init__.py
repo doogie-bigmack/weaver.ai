@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import base64
-import hmac
 import hashlib
+import hmac
 import json
-from typing import Any, Dict
+from typing import Any
 
 
 class PyJWTError(Exception):
@@ -20,7 +20,7 @@ def _b64d(data: str) -> bytes:
     return base64.urlsafe_b64decode(data + padding)
 
 
-def encode(payload: Dict[str, Any], key: str, algorithm: str = "HS256") -> str:
+def encode(payload: dict[str, Any], key: str, algorithm: str = "HS256") -> str:
     header = {"alg": algorithm, "typ": "JWT"}
     head = _b64(json.dumps(header, separators=(",", ":")).encode())
     body = _b64(json.dumps(payload, separators=(",", ":")).encode())
@@ -29,7 +29,7 @@ def encode(payload: Dict[str, Any], key: str, algorithm: str = "HS256") -> str:
     return f"{head}.{body}.{sig}"
 
 
-def decode(token: str, key: str, algorithms: list[str] | None = None) -> Dict[str, Any]:
+def decode(token: str, key: str, algorithms: list[str] | None = None) -> dict[str, Any]:
     try:
         head_b64, body_b64, sig_b64 = token.split(".")
     except ValueError as exc:

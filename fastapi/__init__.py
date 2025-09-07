@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-import asyncio
 import inspect
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Callable, Dict
+from typing import Any
 
 from pydantic import BaseModel
 
@@ -17,8 +17,8 @@ class HTTPException(Exception):
 
 @dataclass
 class Request:
-    headers: Dict[str, str]
-    json: Dict[str, Any] | None = None
+    headers: dict[str, str]
+    json: dict[str, Any] | None = None
 
 
 class Depends:
@@ -28,7 +28,7 @@ class Depends:
 
 class FastAPI:
     def __init__(self) -> None:
-        self.routes: Dict[tuple[str, str], Callable] = {}
+        self.routes: dict[tuple[str, str], Callable] = {}
 
     def get(self, path: str):
         def decorator(func: Callable):
@@ -62,4 +62,4 @@ class FastAPI:
         return result
 
 
-from .testclient import TestClient  # noqa: E402
+from .testclient import TestClient as TestClient  # noqa: E402

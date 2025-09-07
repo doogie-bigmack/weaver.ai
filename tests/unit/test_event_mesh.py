@@ -3,13 +3,12 @@
 from __future__ import annotations
 
 import asyncio
-from typing import List
 
 import pytest
 import pytest_asyncio
-from pydantic import BaseModel
 
-from weaver_ai.events import EventMesh, Event, EventMetadata, AccessPolicy
+from pydantic import BaseModel
+from weaver_ai.events import AccessPolicy, EventMesh, EventMetadata
 
 
 # Test event types

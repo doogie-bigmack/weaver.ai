@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import uuid
-from typing import Any, Callable, Dict
+from collections.abc import Callable
 
 import jwt
 from pydantic import BaseModel, Field
@@ -20,7 +20,7 @@ class MCPServer:
     def __init__(self, server_id: str, private_key: str):
         self.server_id = server_id
         self.private_key = private_key
-        self.tools: Dict[str, Callable[[dict], dict]] = {}
+        self.tools: dict[str, Callable[[dict], dict]] = {}
         self.nonces: set[str] = set()
 
     def add_tool(self, spec: ToolSpec, func: Callable[[dict], dict]) -> None:

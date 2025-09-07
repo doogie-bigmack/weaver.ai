@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any
 
 
 class _Unset:
@@ -35,14 +35,17 @@ class BaseModel:
                     else:
                         value = None
                 elif default is not UNSET:
-                    value = default() if callable(default) and name.endswith("_factory") else default
+                    if callable(default) and name.endswith("_factory"):
+                        value = default()
+                    else:
+                        value = default
                 else:
                     value = None
-            if isinstance(value, (list, dict, set)):
+            if isinstance(value, list | dict | set):
                 value = value.copy()
             setattr(self, name, value)
 
-    def model_dump(self, *, exclude: set[str] | None = None) -> Dict[str, Any]:
+    def model_dump(self, *, exclude: set[str] | None = None) -> dict[str, Any]:
         exclude = exclude or set()
         result = {}
         for k in getattr(self.__class__, "__annotations__", {}):
