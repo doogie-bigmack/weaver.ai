@@ -52,7 +52,9 @@ class FastAPI:
             default = param.default
             if isinstance(default, Depends):
                 kwargs[name] = await default.dependency(request)
-            elif inspect.isclass(param.annotation) and issubclass(param.annotation, BaseModel):
+            elif inspect.isclass(param.annotation) and issubclass(
+                param.annotation, BaseModel
+            ):
                 kwargs[name] = param.annotation(**(request.json or {}))
             else:
                 kwargs[name] = request

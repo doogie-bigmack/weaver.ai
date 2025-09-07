@@ -44,6 +44,7 @@ def canonical_json(obj: Any) -> bytes:
         if isinstance(o, list):
             return [convert(i) for i in o]
         return o
+
     return json.dumps(convert(obj), sort_keys=True, separators=(",", ":")).encode()
 
 

@@ -7,7 +7,9 @@ from weaver_ai.settings import AppSettings
 
 
 def client_api_key() -> TestClient:
-    gateway._settings = AppSettings(allowed_api_keys=["k"], ratelimit_rps=100, ratelimit_burst=100)
+    gateway._settings = AppSettings(
+        allowed_api_keys=["k"], ratelimit_rps=100, ratelimit_burst=100
+    )
     return TestClient(gateway.app)
 
 

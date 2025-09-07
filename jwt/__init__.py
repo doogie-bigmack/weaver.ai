@@ -39,4 +39,3 @@ def decode(token: str, key: str, algorithms: list[str] | None = None) -> dict[st
     if not hmac.compare_digest(_b64d(sig_b64), expected):
         raise PyJWTError("bad signature")
     return json.loads(_b64d(body_b64))
-

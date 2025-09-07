@@ -21,7 +21,9 @@ class TestClient:
     def __init__(self, app: FastAPI):
         self.app = app
 
-    def _make_request(self, method: str, path: str, headers: dict[str, str], json_data: Any | None):
+    def _make_request(
+        self, method: str, path: str, headers: dict[str, str], json_data: Any | None
+    ):
         req = Request(headers=headers, json=json_data)
         try:
             data = asyncio.run(self.app._call(method, path, req))
@@ -39,5 +41,7 @@ class TestClient:
     def get(self, path: str, headers: dict[str, str] | None = None):
         return self._make_request("GET", path, headers or {}, None)
 
-    def post(self, path: str, headers: dict[str, str] | None = None, json: Any | None = None):
+    def post(
+        self, path: str, headers: dict[str, str] | None = None, json: Any | None = None
+    ):
         return self._make_request("POST", path, headers or {}, json)

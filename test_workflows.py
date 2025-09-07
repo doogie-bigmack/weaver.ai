@@ -5,13 +5,15 @@ import os
 import sys
 
 # Change to /tmp to avoid local yaml module
-os.chdir('/tmp')
-sys.path = [p for p in sys.path if 'CI-CD' not in p]
+os.chdir("/tmp")
+sys.path = [p for p in sys.path if "CI-CD" not in p]
 
 import yaml  # noqa: E402
 
-workflow_dir = '/Users/damon.mcdougald/conductor/weaver.ai/.conductor/CI-CD/.github/workflows'
-workflows = ['ci.yml', 'security.yml', 'release.yml', 'pre-commit.yml']
+workflow_dir = (
+    "/Users/damon.mcdougald/conductor/weaver.ai/.conductor/CI-CD/.github/workflows"
+)
+workflows = ["ci.yml", "security.yml", "release.yml", "pre-commit.yml"]
 
 print("Testing GitHub Actions workflows...")
 print("=" * 50)
@@ -22,9 +24,9 @@ for workflow_file in workflows:
     try:
         with open(path) as f:
             data = yaml.safe_load(f)
-        
+
         if data and isinstance(data, dict):
-            if 'name' in data and 'on' in data and 'jobs' in data:
+            if "name" in data and "on" in data and "jobs" in data:
                 print(f"✅ {workflow_file}: Valid - {data['name']}")
             else:
                 print(f"❌ {workflow_file}: Missing required fields")

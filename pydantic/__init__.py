@@ -11,12 +11,16 @@ UNSET = _Unset()
 
 
 class FieldInfo:
-    def __init__(self, default: Any = UNSET, default_factory: Any | None = None) -> None:
+    def __init__(
+        self, default: Any = UNSET, default_factory: Any | None = None
+    ) -> None:
         self.default = default
         self.default_factory = default_factory
 
 
-def Field(*, default: Any = UNSET, default_factory: Any | None = None, **kwargs: Any) -> Any:
+def Field(
+    *, default: Any = UNSET, default_factory: Any | None = None, **kwargs: Any
+) -> Any:
     return FieldInfo(default, default_factory)
 
 
@@ -55,7 +59,9 @@ class BaseModel:
             if isinstance(v, BaseModel):
                 result[k] = v.model_dump()
             elif isinstance(v, list):
-                result[k] = [i.model_dump() if isinstance(i, BaseModel) else i for i in v]
+                result[k] = [
+                    i.model_dump() if isinstance(i, BaseModel) else i for i in v
+                ]
             else:
                 result[k] = v
         return result
@@ -63,4 +69,3 @@ class BaseModel:
 
 class BaseSettings(BaseModel):
     pass
-

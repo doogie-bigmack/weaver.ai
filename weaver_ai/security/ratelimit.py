@@ -17,7 +17,9 @@ class TokenBucket:
 
     def consume(self, amount: int = 1) -> bool:
         now = time.time()
-        self.tokens = min(self.capacity, self.tokens + (now - self.timestamp) * self.rate)
+        self.tokens = min(
+            self.capacity, self.tokens + (now - self.timestamp) * self.rate
+        )
         self.timestamp = now
         if self.tokens >= amount:
             self.tokens -= amount
@@ -30,7 +32,10 @@ _BUCKETS: dict[str, TokenBucket] = defaultdict(lambda: TokenBucket(1, 1))
 
 def enforce(user_id: str, settings: AppSettings) -> None:
     bucket = _BUCKETS[user_id]
-    if bucket.rate != settings.ratelimit_rps or bucket.capacity != settings.ratelimit_burst:
+    if (
+        bucket.rate != settings.ratelimit_rps
+        or bucket.capacity != settings.ratelimit_burst
+    ):
         bucket.rate = settings.ratelimit_rps
         bucket.capacity = settings.ratelimit_burst
         bucket.tokens = settings.ratelimit_burst
