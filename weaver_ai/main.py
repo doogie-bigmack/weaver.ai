@@ -10,7 +10,7 @@ def main() -> None:
     args = parser.parse_args()
     import uvicorn
 
-    uvicorn.run("weaver_ai.main:app", host=args.host, port=args.port)
+    uvicorn.run("weaver_ai.gateway:app", host=args.host, port=args.port)
 
 
 if __name__ == "__main__":  # pragma: no cover
