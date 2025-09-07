@@ -1,14 +1,71 @@
-version: "3.9"
+version: '3.8'
+
 services:
-  gateway:
+  # Test runner service
+  test:
     build: .
-    image: weaver-ai:dev
-    ports: ["8000:8000"]
+    container_name: weaver-test
+    volumes:
+      - ./weaver_ai:/app/weaver_ai
+      - ./tests:/app/tests
+    command: python -m pytest tests/unit/test_event_mesh.py -v
     environment:
-      WEAVER_TELEMETRY_ENABLED: "false"
-      WEAVER_AUTH_MODE: "api_key"
-      WEAVER_ALLOWED_API_KEYS: '["dev-key"]'
-    security_opt: ["no-new-privileges:true"]
-    read_only: true
-    cap_drop: ["ALL"]
-    tmpfs: ["/tmp:size=64m,mode=1777"]
+      - PYTHONUNBUFFERED=1
+
+  # Unit tests
+  unit-tests:
+    build: .
+    container_name: weaver-unit-tests
+    volumes:
+      - ./weaver_ai:/app/weaver_ai
+      - ./tests:/app/tests
+    command: python -m pytest tests/unit/ -v --tb=short
+    environment:
+      - PYTHONUNBUFFERED=1
+
+  # Integration tests
+  integration-tests:
+    build: .
+    container_name: weaver-integration-tests
+    volumes:
+      - ./weaver_ai:/app/weaver_ai
+      - ./tests:/app/tests
+    command: python -m pytest tests/integration/ -v --tb=short --timeout=10
+    environment:
+      - PYTHONUNBUFFERED=1
+
+  # Demo runner
+  demo:
+    build: .
+    container_name: weaver-demo
+    volumes:
+      - ./weaver_ai:/app/weaver_ai
+      - ./demo_event_mesh.py:/app/demo_event_mesh.py
+    command: python demo_event_mesh.py
+    environment:
+      - PYTHONUNBUFFERED=1
+
+  # Development environment with shell
+  dev:
+    build: .
+    container_name: weaver-dev
+    volumes:
+      - .:/app
+    command: /bin/bash
+    stdin_open: true
+    tty: true
+    environment:
+      - PYTHONUNBUFFERED=1
+
+  # Redis for future event mesh backend
+  redis:
+    image: redis:7-alpine
+    container_name: weaver-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+
+volumes:
+  redis-data:
