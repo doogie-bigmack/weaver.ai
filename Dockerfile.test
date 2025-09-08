@@ -19,6 +19,8 @@ RUN pip install --no-cache-dir \
 COPY weaver_ai/ weaver_ai/
 COPY tests/ tests/
 COPY demo_event_mesh.py .
+COPY verify_phase2.py .
+COPY models.yaml .
 
 # Run tests
 CMD ["python", "-m", "pytest", "tests/unit/test_event_mesh.py", "-v", "-s"]

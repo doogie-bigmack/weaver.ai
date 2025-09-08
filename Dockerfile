@@ -14,6 +14,8 @@ COPY pyproject.toml .
 COPY weaver_ai/ weaver_ai/
 COPY tests/ tests/
 COPY demo_event_mesh.py .
+COPY verify_phase2.py .
+COPY models.yaml .
 
 # Install Python dependencies
 RUN pip install --upgrade pip && \
