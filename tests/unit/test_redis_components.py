@@ -9,7 +9,6 @@ import pytest
 import pytest_asyncio
 from pydantic import BaseModel
 
-from weaver_ai.events import Event
 from weaver_ai.redis import RedisAgentRegistry, RedisEventMesh, WorkQueue
 from weaver_ai.redis.queue import Task
 from weaver_ai.redis.registry import AgentInfo
