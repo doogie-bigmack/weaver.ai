@@ -1,0 +1,94 @@
+version: '3.8'
+
+services:
+  # Redis backend for event mesh
+  redis:
+    image: redis:7-alpine
+    container_name: weaver-redis-baseline
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis-baseline-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # Weaver AI service
+  weaver:
+    build: .
+    container_name: weaver-ai-baseline
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - WEAVER_MODEL_PROVIDER=stub
+      - WEAVER_AUTH_MODE=api_key
+      - WEAVER_ALLOWED_API_KEYS=test-api-key
+      - WEAVER_RATELIMIT_RPS=100  # Higher limit for testing
+      - WEAVER_RATELIMIT_BURST=200
+      - WEAVER_REQUEST_TIMEOUT_MS=30000
+      - WEAVER_TELEMETRY_ENABLED=true
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./weaver_ai:/app/weaver_ai
+      - ./tests:/app/tests
+    command: python -m weaver_ai.main --host 0.0.0.0 --port 8000
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # Load testing service
+  locust:
+    build:
+      context: .
+      dockerfile: Dockerfile.locust
+    container_name: weaver-locust-baseline
+    ports:
+      - "8089:8089"  # Locust web UI
+    environment:
+      - PYTHONUNBUFFERED=1
+      - TARGET_HOST=http://weaver:8000
+    volumes:
+      - ./load_tests:/app/load_tests
+      - ./load_tests/results:/app/results
+    depends_on:
+      weaver:
+        condition: service_healthy
+    command: >
+      bash -c "
+        echo 'Waiting for Weaver AI to be ready...';
+        sleep 10;
+        echo 'Starting Locust web UI...';
+        locust -f /app/load_tests/locustfile.py --host http://weaver:8000 --web-host 0.0.0.0
+      "
+
+  # Automated baseline test runner
+  baseline-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile.locust
+    container_name: weaver-baseline-runner
+    environment:
+      - PYTHONUNBUFFERED=1
+      - TEST_HOST=http://weaver:8000
+    volumes:
+      - ./load_tests:/app/load_tests
+      - ./load_tests/results:/app/results
+    depends_on:
+      weaver:
+        condition: service_healthy
+    profiles:
+      - run-baseline
+    command: python /app/load_tests/run_baseline.py
+
+volumes:
+  redis-baseline-data:

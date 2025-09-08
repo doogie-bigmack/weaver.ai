@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  # Redis backend for event mesh (using different port)
+  redis-test:
+    image: redis:7-alpine
+    container_name: weaver-redis-test
+    ports:
+      - "6380:6379"  # Different external port
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis-test-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # Weaver AI service (using different port)
+  weaver-test:
+    build: .
+    container_name: weaver-ai-test
+    ports:
+      - "8002:8000"  # Different external port
+    environment:
+      - PYTHONUNBUFFERED=1
+      - WEAVER_MODEL_PROVIDER=stub
+      - WEAVER_AUTH_MODE=api_key
+      - WEAVER_ALLOWED_API_KEYS='["test-api-key"]'
+      - WEAVER_RATELIMIT_RPS=100
+      - WEAVER_RATELIMIT_BURST=200
+      - WEAVER_REQUEST_TIMEOUT_MS=30000
+      - WEAVER_TELEMETRY_ENABLED=true
+      - REDIS_URL=redis://redis-test:6379
+    depends_on:
+      redis-test:
+        condition: service_healthy
+    volumes:
+      - ./weaver_ai:/app/weaver_ai
+      - ./tests:/app/tests
+    command: python -m weaver_ai.main --host 0.0.0.0 --port 8000
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  redis-test-data:
