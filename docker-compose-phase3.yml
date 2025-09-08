@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - weaver_network
+
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    volumes:
+      - .:/app
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - weaver_network
+    command: >
+      sh -c "
+        pip install -e .[dev] redis pytest-asyncio &&
+        echo '✅ Dependencies installed' &&
+        echo '🧪 Running Phase 3 tests...' &&
+        pytest tests/unit/test_agents.py tests/unit/test_redis_components.py -v &&
+        echo '🎭 Running Phase 3 demo...' &&
+        python demo_phase3.py
+      "
+
+  demo:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    volumes:
+      - .:/app
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - weaver_network
+    command: >
+      sh -c "
+        pip install -e .[dev] redis &&
+        python demo_phase3.py
+      "
+
+volumes:
+  redis_data:
+
+networks:
+  weaver_network:
+    driver: bridge
