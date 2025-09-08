@@ -11,7 +11,7 @@ import subprocess
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List
+from typing import Any
 
 import pandas as pd
 
@@ -39,7 +39,7 @@ class BaselineTestRunner:
             {"users": 100, "spawn_rate": 10, "duration": "180s", "name": "stress_test"},
         ]
 
-    def run_test(self, config: Dict) -> Dict:
+    def run_test(self, config: dict[str, Any]) -> dict[str, Any]:
         """Run a single test configuration.
 
         Args:
@@ -149,7 +149,7 @@ class BaselineTestRunner:
 
         return results
 
-    def run_baseline_suite(self) -> List[Dict]:
+    def run_baseline_suite(self) -> list[dict[str, Any]]:
         """Run the complete baseline test suite.
 
         Returns:
@@ -177,7 +177,7 @@ class BaselineTestRunner:
 
         return all_results
 
-    def save_results(self, results: List[Dict]):
+    def save_results(self, results: list[dict[str, Any]]):
         """Save test results to JSON file.
 
         Args:
@@ -191,7 +191,7 @@ class BaselineTestRunner:
 
         print(f"\nResults saved to: {filename}")
 
-    def generate_report(self, results: List[Dict]) -> str:
+    def generate_report(self, results: list[dict[str, Any]]) -> str:
         """Generate a performance report.
 
         Args:

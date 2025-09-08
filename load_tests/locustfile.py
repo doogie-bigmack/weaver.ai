@@ -7,11 +7,9 @@ and validate optimizations.
 import json
 import random
 import time
-from typing import Any
 
 from locust import HttpUser, between, task
 from locust.env import Environment
-from locust.stats import stats_printer, stats_history
 
 
 class BaseWeaverUser(HttpUser):

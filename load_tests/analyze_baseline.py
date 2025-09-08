@@ -6,9 +6,7 @@ and recommend which performance optimizations to implement first.
 """
 
 import json
-import sys
 from pathlib import Path
-from typing import Dict, List, Tuple
 
 
 class BaselineAnalyzer:
@@ -24,7 +22,7 @@ class BaselineAnalyzer:
         self.bottlenecks = []
         self.recommendations = []
 
-    def load_latest_baseline(self) -> List[Dict]:
+    def load_latest_baseline(self) -> list[dict]:
         """Load the most recent baseline results.
 
         Returns:
@@ -42,7 +40,7 @@ class BaselineAnalyzer:
         with open(latest_file, "r") as f:
             return json.load(f)
 
-    def analyze_scalability(self, results: List[Dict]) -> Dict:
+    def analyze_scalability(self, results: list[dict]) -> dict:
         """Analyze how the system scales with load.
 
         Args:
@@ -95,7 +93,7 @@ class BaselineAnalyzer:
 
         return scalability
 
-    def identify_bottlenecks(self, results: List[Dict], scalability: Dict) -> List[str]:
+    def identify_bottlenecks(self, results: list[dict], scalability: dict) -> list[str]:
         """Identify performance bottlenecks.
 
         Args:
@@ -143,8 +141,8 @@ class BaselineAnalyzer:
         return bottlenecks
 
     def generate_recommendations(
-        self, bottlenecks: List[str], scalability: Dict
-    ) -> List[Tuple[int, str, str]]:
+        self, bottlenecks: list[str], scalability: dict
+    ) -> list[tuple[int, str, str]]:
         """Generate optimization recommendations based on bottlenecks.
 
         Args:
@@ -162,7 +160,10 @@ class BaselineAnalyzer:
                 (
                     1,
                     "Implement Connection Pooling",
-                    "System appears to be hitting connection limits. Connection pooling will reuse connections and dramatically improve throughput.",
+                    (
+                    "System appears to be hitting connection limits. "
+                    "Connection pooling will reuse connections and dramatically improve throughput."
+                ),
                 )
             )
 
@@ -171,7 +172,10 @@ class BaselineAnalyzer:
                 (
                     1,
                     "Add Redis Caching Layer",
-                    "High latency even with single user suggests expensive operations. Caching will reduce latency for repeated queries.",
+                    (
+                    "High latency even with single user suggests expensive operations. "
+                    "Caching will reduce latency for repeated queries."
+                ),
                 )
             )
 
@@ -181,7 +185,10 @@ class BaselineAnalyzer:
                 (
                     2,
                     "Implement Batch Processing",
-                    "System doesn't scale linearly. Batch processing can group similar requests and improve efficiency.",
+                    (
+                    "System doesn't scale linearly. "
+                    "Batch processing can group similar requests and improve efficiency."
+                ),
                 )
             )
 
@@ -198,7 +205,10 @@ class BaselineAnalyzer:
                 (
                     2,
                     "Optimize Request Queue Management",
-                    "Latency grows exponentially with load. Implement better queue management and backpressure.",
+                    (
+                    "Latency grows exponentially with load. "
+                    "Implement better queue management and backpressure."
+                ),
                 )
             )
 
@@ -225,7 +235,7 @@ class BaselineAnalyzer:
 
         return recommendations
 
-    def generate_report(self, results: List[Dict]) -> str:
+    def generate_report(self, results: list[dict]) -> str:
         """Generate comprehensive analysis report.
 
         Args:
@@ -335,7 +345,7 @@ def main():
         print(report)
 
         # Save report
-        report_file = analyzer.results_path / f"analysis_report.txt"
+        report_file = analyzer.results_path / "analysis_report.txt"
         with open(report_file, "w") as f:
             f.write(report)
 
