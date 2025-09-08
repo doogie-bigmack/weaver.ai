@@ -7,7 +7,7 @@ from .router import ModelRouter
 
 __all__ = [
     "ModelAdapter",
-    "ModelResponse", 
+    "ModelResponse",
     "MockAdapter",
     "ModelRouter",
     "QueryRequest",

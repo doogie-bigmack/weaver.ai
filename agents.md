@@ -132,7 +132,7 @@ Weaver AI is an A2A-compliant agent framework that implements secure, observable
 
 ### Settings Management (`settings.py`)
 - **AppSettings**: Central configuration class
-- **Environment Variables**: 
+- **Environment Variables**:
   - `JWT_SECRET`: Authentication key
   - `PII_REDACT`: Enable PII redaction
   - `RATE_LIMIT_RPM`: Requests per minute limit

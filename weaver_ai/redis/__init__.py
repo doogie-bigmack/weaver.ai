@@ -6,6 +6,6 @@ from .registry import RedisAgentRegistry
 
 __all__ = [
     "RedisEventMesh",
-    "WorkQueue", 
+    "WorkQueue",
     "RedisAgentRegistry",
 ]

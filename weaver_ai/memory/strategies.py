@@ -7,7 +7,7 @@ from pydantic import BaseModel
 
 class ShortTermConfig(BaseModel):
     """Short-term memory configuration."""
-    
+
     enabled: bool = True
     max_items: int = 100
     ttl_seconds: int = 3600  # 1 hour default
@@ -15,7 +15,7 @@ class ShortTermConfig(BaseModel):
 
 class LongTermConfig(BaseModel):
     """Long-term memory configuration."""
-    
+
     enabled: bool = True
     max_size_mb: int = 1024  # 1GB default
     compression: bool = True
@@ -24,7 +24,7 @@ class LongTermConfig(BaseModel):
 
 class EpisodicConfig(BaseModel):
     """Episodic memory configuration."""
-    
+
     enabled: bool = False
     max_episodes: int = 1000
     importance_threshold: float = 0.7
@@ -33,7 +33,7 @@ class EpisodicConfig(BaseModel):
 
 class SemanticConfig(BaseModel):
     """Semantic memory configuration for knowledge storage."""
-    
+
     enabled: bool = False
     vector_dimensions: int = 1536  # OpenAI embedding size
     index_type: str = "flat"  # flat, hnsw, ivf
@@ -42,7 +42,7 @@ class SemanticConfig(BaseModel):
 
 class PersistentConfig(BaseModel):
     """Persistence configuration for memory across restarts."""
-    
+
     enabled: bool = True
     checkpoint_interval: int = 300  # 5 minutes
     backup_location: str = "/data/agents/{agent_id}/memory"
@@ -51,13 +51,13 @@ class PersistentConfig(BaseModel):
 
 class MemoryStrategy(BaseModel):
     """Complete memory strategy for an agent."""
-    
+
     short_term: ShortTermConfig = ShortTermConfig()
     long_term: LongTermConfig = LongTermConfig()
     episodic: EpisodicConfig = EpisodicConfig()
     semantic: SemanticConfig = SemanticConfig()
     persistent: PersistentConfig = PersistentConfig()
-    
+
     @classmethod
     def analyst_strategy(cls) -> MemoryStrategy:
         """Strategy optimized for data analysts."""
@@ -67,7 +67,7 @@ class MemoryStrategy(BaseModel):
             semantic=SemanticConfig(enabled=True),  # For pattern matching
             persistent=PersistentConfig(enabled=True),
         )
-    
+
     @classmethod
     def coordinator_strategy(cls) -> MemoryStrategy:
         """Strategy optimized for workflow coordinators."""
@@ -77,7 +77,7 @@ class MemoryStrategy(BaseModel):
             episodic=EpisodicConfig(enabled=True, max_episodes=100),
             persistent=PersistentConfig(enabled=True),
         )
-    
+
     @classmethod
     def validator_strategy(cls) -> MemoryStrategy:
         """Strategy optimized for validators."""
@@ -87,7 +87,7 @@ class MemoryStrategy(BaseModel):
             semantic=SemanticConfig(enabled=True, similarity_threshold=0.95),
             persistent=PersistentConfig(enabled=False),  # Stateless
         )
-    
+
     @classmethod
     def minimal_strategy(cls) -> MemoryStrategy:
         """Minimal memory for simple agents."""
