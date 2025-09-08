@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  # Weaver AI service in simple test mode
+  weaver-simple:
+    build: .
+    container_name: weaver-ai-simple
+    ports:
+      - "8005:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - WEAVER_MODEL_PROVIDER=stub
+    command: python -m weaver_ai.main --host 0.0.0.0 --port 8000
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s

@@ -1,0 +1,24 @@
+FROM python:3.13-slim
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /app
+
+# Copy project files
+COPY pyproject.toml .
+COPY weaver_ai/ weaver_ai/
+
+# Install Python dependencies
+RUN pip install --upgrade pip && \
+    pip install -e .
+
+# Expose port
+EXPOSE 8000
+
+# Use test gateway for performance testing
+CMD ["uvicorn", "weaver_ai.gateway_test:app", "--host", "0.0.0.0", "--port", "8000"]
