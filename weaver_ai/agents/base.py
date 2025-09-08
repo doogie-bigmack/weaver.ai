@@ -301,14 +301,23 @@ class BaseAgent(BaseModel):
             True if agent can process
         """
         # Check if event type matches capabilities
-        event_type = event.event_type.lower()
+        # event.event_type is a class, so get its name
+        event_type_name = event.event_type.__name__.lower()
 
         for capability in self.capabilities:
-            if ":" in capability:
-                action, subject = capability.split(":", 1)
-                if action in event_type or subject in event_type:
+            capability_lower = capability.lower()
+            if ":" in capability_lower:
+                # For action:subject format, match more precisely
+                # Convert TestData -> test:data
+                # This ensures test:data matches TestData but not OtherData
+                action, subject = capability_lower.split(":", 1)
+                # Check if event type name contains both parts
+                # TestData -> testdata should match test:data
+                # OtherData -> otherdata should NOT match test:data
+                expected_name = (action + subject).lower()
+                if event_type_name == expected_name:
                     return True
-            elif capability in event_type:
+            elif capability_lower in event_type_name:
                 return True
 
         return False
