@@ -6,8 +6,8 @@ from fastapi import FastAPI
 
 from .agent import AgentOrchestrator
 from .mcp import MCPClient
-from .model_router import StubModel
 from .models import Citation, QueryRequest, QueryResponse
+from .pooled_stub import PooledStubModel
 from .settings import AppSettings
 from .tools import create_python_eval_server
 from .verifier import Verifier
@@ -15,19 +15,28 @@ from .verifier import Verifier
 app = FastAPI()
 _settings = AppSettings()
 
+# Use the pooled stub model for better performance
+_pooled_model = PooledStubModel()
+
 
 def get_agent() -> AgentOrchestrator:
     key = "secret"
     server = create_python_eval_server("srv", key)
     client = MCPClient(server, key)
-    router = StubModel()
+    # Use the pooled stub model for connection reuse simulation
     verifier = Verifier()
-    return AgentOrchestrator(_settings, router, client, verifier)
+    return AgentOrchestrator(_settings, _pooled_model, client, verifier)
 
 
 @app.get("/health")
 async def health() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@app.get("/pool-stats")
+async def pool_stats() -> dict:
+    """Get connection pooling statistics."""
+    return _pooled_model.get_stats()
 
 
 @app.post("/ask")

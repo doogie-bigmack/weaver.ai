@@ -2,17 +2,22 @@
 
 from .base import ModelAdapter, ModelResponse
 from .mock import MockAdapter
+from .pooled_mock import PooledMockAdapter
 
 
 class ModelRouter:
     """Routes requests to appropriate models."""
 
-    def __init__(self):
+    def __init__(self, use_connection_pooling: bool = True):
         self.models: dict[str, ModelAdapter] = {}
         self.default_model: str | None = None
+        self.use_connection_pooling = use_connection_pooling
 
-        # Always include a mock model for testing
-        self.register("mock", MockAdapter())
+        # Use pooled mock adapter when connection pooling is enabled
+        if use_connection_pooling:
+            self.register("mock", PooledMockAdapter())
+        else:
+            self.register("mock", MockAdapter())
         self.default_model = "mock"
 
     def register(self, name: str, adapter: ModelAdapter) -> None:
