@@ -221,9 +221,10 @@ def on_test_start(environment: Environment, **kwargs):
     """Called when test starts."""
     print("Load test starting...")
     print(f"Target host: {environment.host}")
-    print(
-        f"Total users: {environment.parsed_options.num_users if environment.parsed_options else 'N/A'}"
+    num_users = (
+        environment.parsed_options.num_users if environment.parsed_options else "N/A"
     )
+    print(f"Total users: {num_users}")
 
 
 def on_test_stop(environment: Environment, **kwargs):
