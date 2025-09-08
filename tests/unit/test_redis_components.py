@@ -50,6 +50,7 @@ class TestRedisEventMesh:
             # Make from_url return a coroutine that returns an AsyncMock
             async def async_from_url(*args, **kwargs):
                 return AsyncMock()
+
             mock_redis.side_effect = async_from_url
 
             mesh = RedisEventMesh("redis://localhost:6379")

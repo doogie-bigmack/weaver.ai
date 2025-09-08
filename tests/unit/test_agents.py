@@ -73,7 +73,7 @@ class TestBaseAgent:
         # Use a different data type for non-matching
         class OtherData(BaseModel):
             value: str
-        
+
         event2 = Event(
             data=OtherData(value="other"),
         )
@@ -169,7 +169,7 @@ class TestCapabilities:
         # Create a data model that matches the capability name
         class AnalyzeData(BaseModel):
             test: str
-        
+
         event = Event(
             data=AnalyzeData(test="data"),
         )
@@ -242,10 +242,10 @@ class TestAgentIntegration:
                 )
 
         agent = CustomAgent()
-        
+
         class CustomData(BaseModel):
             test: str
-        
+
         event = Event(
             data=CustomData(test="value"),
         )
