@@ -7,6 +7,7 @@ and recommend which performance optimizations to implement first.
 
 import json
 from pathlib import Path
+from typing import Any, cast
 
 
 class BaselineAnalyzer:
@@ -19,8 +20,8 @@ class BaselineAnalyzer:
             results_path: Path to results directory
         """
         self.results_path = Path(results_path)
-        self.bottlenecks = []
-        self.recommendations = []
+        self.bottlenecks: list[str] = []
+        self.recommendations: list[tuple[int, str, str]] = []
 
     def load_latest_baseline(self) -> list[dict]:
         """Load the most recent baseline results.
@@ -37,10 +38,10 @@ class BaselineAnalyzer:
         # Get most recent file
         latest_file = max(baseline_files, key=lambda f: f.stat().st_mtime)
 
-        with open(latest_file, "r") as f:
-            return json.load(f)
+        with open(latest_file) as f:
+            return cast(list[dict[Any, Any]], json.load(f))
 
-    def analyze_scalability(self, results: list[dict]) -> dict:
+    def analyze_scalability(self, results: list[dict]) -> dict[str, Any]:
         """Analyze how the system scales with load.
 
         Args:
@@ -68,8 +69,8 @@ class BaselineAnalyzer:
         for result in results:
             users = result["users"]
             rps = result.get("rps", 0)
-            failure_rate = result.get("failure_rate", 0)
-            p95 = result.get("p95", 0)
+            failure_rate = result.get("failure_rate", 0.0)
+            p95 = result.get("p95", 0.0)
 
             # Calculate scaling efficiency
             expected_rps = baseline_rps * users
@@ -85,15 +86,20 @@ class BaselineAnalyzer:
                 scalability["bottleneck_point"] = users
 
         # Calculate overall scaling factor
-        if scalability["max_sustainable_users"] > 1:
-            scalability["scaling_factor"] = scalability["max_sustainable_rps"] / (
-                baseline_rps * scalability["max_sustainable_users"]
+        if scalability["max_sustainable_users"] > 1:  # type: ignore[operator]
+            scalability["scaling_factor"] = (
+                scalability["max_sustainable_rps"]
+                / (baseline_rps * scalability["max_sustainable_users"])
+                if baseline_rps > 0
+                else 0.0
             )
-            scalability["linear_scaling"] = scalability["scaling_factor"] > 0.8
+            scalability["linear_scaling"] = scalability["scaling_factor"] > 0.8  # type: ignore[operator]
 
         return scalability
 
-    def identify_bottlenecks(self, results: list[dict], scalability: dict) -> list[str]:
+    def identify_bottlenecks(
+        self, results: list[dict], scalability: dict[str, Any]
+    ) -> list[str]:
         """Identify performance bottlenecks.
 
         Args:
@@ -141,7 +147,7 @@ class BaselineAnalyzer:
         return bottlenecks
 
     def generate_recommendations(
-        self, bottlenecks: list[str], scalability: dict
+        self, bottlenecks: list[str], scalability: dict[str, Any]
     ) -> list[tuple[int, str, str]]:
         """Generate optimization recommendations based on bottlenecks.
 
@@ -161,9 +167,10 @@ class BaselineAnalyzer:
                     1,
                     "Implement Connection Pooling",
                     (
-                    "System appears to be hitting connection limits. "
-                    "Connection pooling will reuse connections and dramatically improve throughput."
-                ),
+                        "System appears to be hitting connection limits. "
+                        "Connection pooling will reuse connections and "
+                        "dramatically improve throughput."
+                    ),
                 )
             )
 
@@ -173,9 +180,9 @@ class BaselineAnalyzer:
                     1,
                     "Add Redis Caching Layer",
                     (
-                    "High latency even with single user suggests expensive operations. "
-                    "Caching will reduce latency for repeated queries."
-                ),
+                        "High latency even with single user suggests expensive operations. "
+                        "Caching will reduce latency for repeated queries."
+                    ),
                 )
             )
 
@@ -186,9 +193,9 @@ class BaselineAnalyzer:
                     2,
                     "Implement Batch Processing",
                     (
-                    "System doesn't scale linearly. "
-                    "Batch processing can group similar requests and improve efficiency."
-                ),
+                        "System doesn't scale linearly. "
+                        "Batch processing can group similar requests and improve efficiency."
+                    ),
                 )
             )
 
@@ -196,7 +203,10 @@ class BaselineAnalyzer:
                 (
                     2,
                     "Add Horizontal Scaling",
-                    "Single instance hitting limits. Deploy multiple instances behind a load balancer.",
+                    (
+                        "Single instance hitting limits. "
+                        "Deploy multiple instances behind a load balancer."
+                    ),
                 )
             )
 
@@ -206,9 +216,9 @@ class BaselineAnalyzer:
                     2,
                     "Optimize Request Queue Management",
                     (
-                    "Latency grows exponentially with load. "
-                    "Implement better queue management and backpressure."
-                ),
+                        "Latency grows exponentially with load. "
+                        "Implement better queue management and backpressure."
+                    ),
                 )
             )
 
@@ -218,7 +228,10 @@ class BaselineAnalyzer:
                 (
                     3,
                     "Add Response Streaming (SSE)",
-                    "Streaming responses will improve perceived performance and reduce memory usage.",
+                    (
+                        "Streaming responses will improve perceived performance "
+                        "and reduce memory usage."
+                    ),
                 )
             )
 

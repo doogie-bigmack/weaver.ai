@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """Quick test to verify API is working."""
 
-import requests
+import subprocess
+
+import requests  # type: ignore[import-untyped]
 
 # Test with different auth approaches
 host = "http://localhost:8005"
@@ -44,7 +46,6 @@ print(f"   Response: {r.text}")
 
 # Test 4: Check what auth mode is configured
 print("\n4. Checking container environment:")
-import subprocess
 
 result = subprocess.run(
     ["docker", "exec", "weaver-ai-simple", "env"], capture_output=True, text=True

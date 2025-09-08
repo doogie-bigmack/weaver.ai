@@ -11,6 +11,10 @@ class ModelResponse(BaseModel):
     text: str
     model: str
     tokens_used: int = 0
+    # Optional fields for caching metadata
+    cached: bool = False
+    cache_key: str | None = None
+    generation_time_ms: float | None = None
 
 
 class ModelAdapter(Protocol):

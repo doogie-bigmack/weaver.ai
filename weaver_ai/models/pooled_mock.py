@@ -64,20 +64,11 @@ class PooledMockAdapter(MockAdapter):
         # Generate the actual response
         response = await super().generate(prompt, **kwargs)
 
-        # Add pooling stats to response
+        # Add pooling stats to response (just track internally, don't add to response)
         elapsed_ms = (time.time() - start_time) * 1000
-        response.metadata = {
-            "connection_pooling": True,
-            "connections_created": self.connection_count,
-            "connections_reused": self.connection_reuse_count,
-            "active_connections": len(self._connections),
-            "reuse_rate": (
-                self.connection_reuse_count / self.request_count
-                if self.request_count > 0
-                else 0
-            ),
-            "response_time_ms": elapsed_ms,
-        }
+
+        # Update generation time in response
+        response.generation_time_ms = elapsed_ms
 
         return response
 

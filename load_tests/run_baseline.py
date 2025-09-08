@@ -172,7 +172,7 @@ class BaselineTestRunner:
 
             # Cool down between tests
             if config != self.test_configs[-1]:
-                print(f"\nCooling down for 10 seconds...")
+                print("\nCooling down for 10 seconds...")
                 time.sleep(10)
 
         return all_results
@@ -208,9 +208,11 @@ class BaselineTestRunner:
         # Summary table
         report.append("Test Results Summary:")
         report.append("-" * 70)
-        report.append(
-            f"{'Test':<15} {'Users':<8} {'RPS':<10} {'P50 (ms)':<12} {'P95 (ms)':<12} {'Failures':<10}"
+        header = (
+            f"{'Test':<15} {'Users':<8} {'RPS':<10} "
+            f"{'P50 (ms)':<12} {'P95 (ms)':<12} {'Failures':<10}"
         )
+        report.append(header)
         report.append("-" * 70)
 
         for r in results:
@@ -288,7 +290,7 @@ class BaselineTestRunner:
 def main():
     """Run baseline tests and generate report."""
     # Check if server is running
-    import requests
+    import requests  # type: ignore[import-untyped]
 
     host = os.getenv("TEST_HOST", "http://localhost:8000")
 
