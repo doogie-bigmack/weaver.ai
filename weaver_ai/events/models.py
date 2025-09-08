@@ -16,49 +16,49 @@ from pydantic import BaseModel, Field
 
 class AccessPolicy(BaseModel):
     """Access control policy for events.
-    
+
     Supports both role-based and level-based access control.
     Denied roles take precedence over allowed roles.
-    
+
     Attributes:
         min_level: Minimum access level required (public, internal, confidential, secret)
         allowed_roles: List of roles that can access this event
         denied_roles: List of roles explicitly denied access
     """
-    
+
     min_level: str = "public"
     allowed_roles: list[str] = Field(default_factory=list)
     denied_roles: list[str] = Field(default_factory=list)
-    
+
     def can_access(self, agent_roles: list[str], agent_level: str) -> bool:
         """Check if an agent has access to this event.
-        
+
         Args:
             agent_roles: Roles assigned to the agent
             agent_level: Access level of the agent
-            
+
         Returns:
             True if agent has access, False otherwise
         """
         # Denied roles override everything
         if any(role in self.denied_roles for role in agent_roles):
             return False
-        
+
         # If allowed roles specified, agent must have at least one
         if self.allowed_roles:
             return any(role in self.allowed_roles for role in agent_roles)
-        
+
         # Check hierarchical access levels
         levels = ["public", "internal", "confidential", "secret"]
         if self.min_level in levels and agent_level in levels:
             return levels.index(agent_level) >= levels.index(self.min_level)
-        
+
         return True
 
 
 class EventMetadata(BaseModel):
     """Metadata for event tracking and correlation.
-    
+
     Attributes:
         event_id: Unique identifier for this event
         timestamp: When the event was created
@@ -67,7 +67,7 @@ class EventMetadata(BaseModel):
         correlation_id: ID to correlate related events
         priority: Event priority (low, normal, high)
     """
-    
+
     event_id: str = Field(default_factory=lambda: uuid4().hex)
     timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
     source_agent: str | None = None
@@ -78,17 +78,17 @@ class EventMetadata(BaseModel):
 
 class Event(BaseModel):
     """Type-safe event wrapper with access control.
-    
+
     Attributes:
         data: The actual event payload (must be a Pydantic model)
         metadata: Event tracking information
         access_policy: Access control rules
     """
-    
+
     data: BaseModel
     metadata: EventMetadata = Field(default_factory=EventMetadata)
     access_policy: AccessPolicy = Field(default_factory=AccessPolicy)
-    
+
     @property
     def event_type(self) -> type[BaseModel]:
         """Get the Pydantic model type of the event data."""

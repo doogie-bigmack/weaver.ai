@@ -15,6 +15,7 @@ Requires-Dist: pyjwt>=2.9
 Requires-Dist: pyyaml>=6
 Provides-Extra: dev
 Requires-Dist: pytest>=8; extra == "dev"
+Requires-Dist: pytest-asyncio>=0.23; extra == "dev"
 Requires-Dist: mypy>=1.10; extra == "dev"
 Requires-Dist: ruff>=0.6; extra == "dev"
 Requires-Dist: black>=24; extra == "dev"

@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import List
-
 from pydantic import BaseModel
 
 
@@ -10,7 +8,7 @@ class ModelRouter(BaseModel):
         self,
         prompt: str,
         *,
-        stop: List[str] | None = None,
+        stop: list[str] | None = None,
         max_tokens: int = 256,
         temperature: float = 0.2,
     ) -> str:
