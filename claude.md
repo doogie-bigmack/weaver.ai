@@ -125,7 +125,7 @@ class NewTool(Tool):
     name = "new_tool"
     description = "Tool description"
     required_scopes = ["tool:new_tool"]
-    
+
     def call(self, **kwargs):
         # Implementation
         return {"result": ...}

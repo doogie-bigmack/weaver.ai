@@ -1,11 +1,11 @@
 models:
   - name: mock
     type: mock
-    
+
   - name: gpt3
     type: openai
     model: gpt-3.5-turbo
-    
+
   - name: gpt4
     type: openai
     model: gpt-4
