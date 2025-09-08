@@ -82,7 +82,7 @@ models:
     capabilities: ["code", "analysis", "vision"]
     cost_per_token: 0.00003
     max_context: 128000
-    
+
   - name: "custom-llama"
     provider: "self-hosted"
     endpoint: "https://internal.company.com/v1"
@@ -101,19 +101,19 @@ models:
 # weaver_ai/agents/base.py
 class BaseAgent(PydanticAgent):
     """Enhanced Pydantic Agent with memory and capabilities"""
-    
+
     # Identity & Access
     agent_id: str
     capabilities: List[Capability]
     required_inputs: List[DataRequirement]
-    
+
     # Memory Configuration
     memory: AgentMemory
-    
+
     # Processing
     async def process(self, event: Event) -> Result:
         """Main processing logic"""
-        
+
     async def can_process(self, event: Event) -> bool:
         """Check if agent can handle this event"""
 ```
@@ -123,12 +123,12 @@ class BaseAgent(PydanticAgent):
 # weaver_ai/memory/core.py
 class AgentMemory(BaseModel):
     """Flexible memory system per agent role"""
-    
+
     short_term: ShortTermMemory  # Current task context
     long_term: LongTermMemory    # Historical patterns
     episodic: EpisodicMemory     # Specific experiences
     semantic: SemanticMemory     # Domain knowledge
-    
+
     class Config:
         # Memory limits based on agent role
         max_short_term_items: int = 100
@@ -138,7 +138,7 @@ class AgentMemory(BaseModel):
 # Role-specific memory configurations
 class AnalystMemory(AgentMemory):
     max_long_term_mb: int = 10240  # 10GB for data analysis
-    
+
 class CoordinatorMemory(AgentMemory):
     max_short_term_items: int = 1000  # Track many agents
 ```
@@ -148,15 +148,15 @@ class CoordinatorMemory(AgentMemory):
 # weaver_ai/agents/registry.py
 class AgentRegistry:
     """Dynamic agent discovery and capability matching"""
-    
+
     async def register(agent: BaseAgent):
         """Register agent with capabilities"""
-        
+
     async def find_capable_agents(
         requirement: DataRequirement
     ) -> List[BaseAgent]:
         """Find agents that can process specific data"""
-        
+
     async def get_next_agent(
         result: Result
     ) -> Optional[BaseAgent]:
@@ -179,7 +179,7 @@ from weaver_ai import Agent, Memory, Capability
 class DataAnalyst(Agent):
     memory = Memory(semantic_size="10GB", episodic_ttl="7d")
     capabilities = [Capability("analyze_sales")]
-    
+
     async def process(self, sales_data):
         analysis = await self.llm.analyze(sales_data)
         return self.publish("sales_analysis", analysis)
@@ -201,10 +201,10 @@ await workflow.run()
 # weaver_ai/tools/mcp_integration.py
 class MCPToolkit:
     """Auto-discover and integrate MCP tools"""
-    
+
     def auto_discover_tools():
         """Scan for available MCP servers"""
-        
+
     def grant_tool_access(agent, tools):
         """Grant specific tools to agents"""
 ```
@@ -372,7 +372,7 @@ from weaver_ai import Agent, Workflow, Memory
 @agent
 class Researcher(Agent):
     memory = Memory(semantic="large")
-    
+
     async def process(self, topic):
         research = await self.llm.research(topic)
         return self.publish("research_complete", research)
@@ -381,7 +381,7 @@ class Researcher(Agent):
 class Writer(Agent):
     memory = Memory(episodic="7d")
     requires = ["research_complete"]
-    
+
     async def process(self, research):
         article = await self.llm.write_article(research)
         return self.publish("article_ready", article)
@@ -389,7 +389,7 @@ class Writer(Agent):
 @agent
 class Reviewer(Agent):
     requires = ["article_ready"]
-    
+
     async def process(self, article):
         review = await self.llm.review(article)
         return self.publish("review_complete", review)

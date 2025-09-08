@@ -4,6 +4,27 @@
 
 Weaver AI is an experimental A2A-compliant agent framework implementing secure multi-agent orchestration with comprehensive security controls, telemetry, and verification systems.
 
+## 🔧 IMPORTANT: Always Lint Before Committing
+
+**Before creating any commits or PRs, ALWAYS run:**
+```bash
+./lint.sh
+```
+
+This will:
+1. Run ruff to check and auto-fix linting issues
+2. Run black to format code
+3. Run mypy for type checking (informational)
+4. Ensure code passes all CI checks
+
+**Alternative: Run linting manually:**
+```bash
+source venv/bin/activate
+ruff check . --fix
+black .
+mypy weaver_ai --ignore-missing-imports
+```
+
 ## Key Commands
 
 ### Development
@@ -125,7 +146,7 @@ class NewTool(Tool):
     name = "new_tool"
     description = "Tool description"
     required_scopes = ["tool:new_tool"]
-    
+
     def call(self, **kwargs):
         # Implementation
         return {"result": ...}

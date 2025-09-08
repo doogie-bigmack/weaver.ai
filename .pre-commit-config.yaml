@@ -11,6 +11,9 @@ repos:
     rev: v1.10.0
     hooks:
       - id: mypy
+        args: [--ignore-missing-imports]
+        additional_dependencies: [types-PyYAML]
+        exclude: ^(tests/|test_|validate_|verify_)
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.6.0
     hooks:

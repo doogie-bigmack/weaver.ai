@@ -101,7 +101,7 @@ class CustomerOrder(BaseModel):
     order_id: str
     items: List[str]
     total: float
-    
+
 # Type validation automatic
 await mesh.publish(CustomerOrder, wrong_type)  # Raises TypeError
 ```
@@ -121,7 +121,7 @@ await mesh.publish(
 
 From test runs:
 - **Event Publishing**: < 1ms per event
-- **Concurrent Publishing**: 100 events in < 1 second  
+- **Concurrent Publishing**: 100 events in < 1 second
 - **Subscription Delivery**: < 10ms latency
 - **Memory**: Minimal overhead with async generators
 
@@ -151,7 +151,7 @@ tests/
 
 Docker Testing:
 ├── Dockerfile.test      # Minimal test image
-├── docker-compose.yml   # Service orchestration  
+├── docker-compose.yml   # Service orchestration
 ├── Makefile            # Easy commands
 ├── verify_docker.py    # Docker verification
 └── DOCKER_TESTING.md   # Docker documentation
