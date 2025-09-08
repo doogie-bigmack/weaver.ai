@@ -16,6 +16,7 @@ COPY tests/ tests/
 COPY demo_event_mesh.py .
 COPY verify_phase2.py .
 COPY models.yaml .
+COPY gateway_cached.py .
 
 # Install Python dependencies
 RUN pip install --upgrade pip && \

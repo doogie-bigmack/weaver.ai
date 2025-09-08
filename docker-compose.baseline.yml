@@ -46,6 +46,28 @@ services:
       retries: 5
       start_period: 30s
 
+  # Weaver AI with caching enabled
+  weaver-cached:
+    build: .
+    container_name: weaver-ai-cached
+    ports:
+      - "8002:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./weaver_ai:/app/weaver_ai
+      - ./gateway_cached.py:/app/gateway_cached.py
+    command: python gateway_cached.py
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
   # Load testing service
   locust:
     build:

@@ -47,7 +47,7 @@ class MockAdapter:
             elif op == "*":
                 result = a * b
             elif op == "/" and b != 0:
-                result = a / b
+                result = int(a / b)
             else:
                 return "Cannot evaluate this expression"
 

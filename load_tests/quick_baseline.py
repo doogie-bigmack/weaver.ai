@@ -3,9 +3,10 @@
 
 import json
 import time
-import requests
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
+
+import requests  # type: ignore[import-untyped]
 
 
 def make_request(session, url, query="What is 2+2?"):
@@ -33,7 +34,7 @@ def make_request(session, url, query="What is 2+2?"):
 def run_test(host="http://localhost:8005", users=1, duration=30):
     """Run a simple load test."""
     print(f"\n{'='*60}")
-    print(f"Running Quick Baseline Test")
+    print("Running Quick Baseline Test")
     print(f"Host: {host}")
     print(f"Users: {users}")
     print(f"Duration: {duration}s")
@@ -43,7 +44,7 @@ def run_test(host="http://localhost:8005", users=1, duration=30):
     try:
         r = requests.get(f"{host}/health", timeout=5)
         print(f"✅ Service is up (health check: {r.status_code})")
-    except:
+    except requests.exceptions.RequestException:
         print("❌ Service is not responding")
         return None
 
@@ -127,7 +128,7 @@ def print_results(metrics):
     print("TEST RESULTS")
     print("=" * 60)
 
-    print(f"\nThroughput:")
+    print("\nThroughput:")
     print(f"  Total Requests: {metrics['total_requests']}")
     print(f"  Successful: {metrics['successful']}")
     print(f"  Failed: {metrics['failed']}")
@@ -135,7 +136,7 @@ def print_results(metrics):
     print(f"  RPS: {metrics['rps']:.2f}")
     print(f"  Success Rate: {metrics['success_rate']:.1f}%")
 
-    print(f"\nLatency (seconds):")
+    print("\nLatency (seconds):")
     print(f"  Min: {metrics['min_response']:.3f}s")
     print(f"  Avg: {metrics['avg_response']:.3f}s")
     print(f"  P50: {metrics['p50']:.3f}s")
