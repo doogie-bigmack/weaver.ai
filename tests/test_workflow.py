@@ -7,12 +7,10 @@ from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-import pytest_asyncio
 from pydantic import BaseModel
 
 from weaver_ai import Workflow
 from weaver_ai.agents import BaseAgent, agent
-from weaver_ai.agents.error_handling import FailFast, RetryWithBackoff, SkipOnError
 from weaver_ai.events import Event
 from weaver_ai.workflow import WorkflowResult, WorkflowState
 
@@ -115,7 +113,7 @@ class TestWorkflow:
 
         assert isinstance(result, WorkflowResult)
         assert result.state == WorkflowState.COMPLETED
-        assert isinstance(result.result, (ProcessedData, FinalResult))
+        assert isinstance(result.result, ProcessedData | FinalResult)
 
     @pytest.mark.asyncio
     async def test_type_based_routing(self):
@@ -153,11 +151,12 @@ class TestWorkflow:
 
             with patch.object(AgentA, "initialize", new=AsyncMock()):
                 with patch.object(AgentB, "initialize", new=AsyncMock()):
-                    # The workflow should automatically route DataA -> AgentA -> DataB -> AgentB -> DataC
+                    # The workflow should automatically route
+                    # DataA -> AgentA -> DataB -> AgentB -> DataC
                     result = await workflow.run(DataA(value="start"))
 
         # Result should be DataC after going through both agents
-        assert isinstance(result, (DataB, DataC))
+        assert isinstance(result, DataB | DataC)
 
     @pytest.mark.asyncio
     async def test_manual_routing_override(self):
@@ -325,7 +324,7 @@ class TestWorkflow:
 
                 with patch.object(ProcessorAgent, "initialize", new=AsyncMock()):
                     with patch.object(AggregatorAgent, "initialize", new=AsyncMock()):
-                        result = await workflow.run(InputData(value=1, text="test"))
+                        await workflow.run(InputData(value=1, text="test"))
 
         # Intervention should have been checked
         assert mock_intervention.called
@@ -377,7 +376,7 @@ class TestWorkflow:
             with patch.object(
                 ProcessorAgent, "initialize", new=AsyncMock()
             ) as mock_init:
-                result = await workflow.run(InputData(value=1, text="test"))
+                await workflow.run(InputData(value=1, text="test"))
 
                 # Verify model router was passed to agent
                 mock_init.assert_called_once()

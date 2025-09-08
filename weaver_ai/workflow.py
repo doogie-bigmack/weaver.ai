@@ -4,16 +4,17 @@ from __future__ import annotations
 
 import asyncio
 import uuid
+from collections.abc import Callable
 from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Type
+from typing import Any
 
 from pydantic import BaseModel, Field
 
 from weaver_ai.agents import BaseAgent
 from weaver_ai.agents.discovery import TypeBasedRouter
 from weaver_ai.agents.error_handling import ErrorStrategy, RetryWithBackoff
-from weaver_ai.events import Event, EventMesh
+from weaver_ai.events import Event
 from weaver_ai.models import ModelRouter
 from weaver_ai.redis import RedisEventMesh
 
@@ -37,17 +38,17 @@ class WorkflowResult(BaseModel):
     error: str | None = None
     start_time: datetime
     end_time: datetime | None = None
-    agent_results: Dict[str, Any] = {}
-    metrics: Dict[str, Any] = {}
+    agent_results: dict[str, Any] = {}
+    metrics: dict[str, Any] = {}
 
 
 class AgentConfig(BaseModel):
     """Configuration for an agent in a workflow."""
 
-    agent_class: Type[BaseAgent]
+    agent_class: type[BaseAgent]
     instance_id: str = Field(default_factory=lambda: uuid.uuid4().hex)
     error_strategy: ErrorStrategy = Field(default_factory=RetryWithBackoff)
-    config: Dict[str, Any] = {}
+    config: dict[str, Any] = {}
 
 
 class RouteCondition(BaseModel):
@@ -83,11 +84,11 @@ class Workflow:
         self.redis_url = redis_url
 
         # Agent configuration
-        self.agents: List[AgentConfig] = []
-        self.agent_instances: Dict[str, BaseAgent] = {}
+        self.agents: list[AgentConfig] = []
+        self.agent_instances: dict[str, BaseAgent] = {}
 
         # Routing configuration
-        self.routes: List[RouteCondition] = []
+        self.routes: list[RouteCondition] = []
         self.type_router: TypeBasedRouter | None = None
 
         # Workflow configuration
@@ -103,7 +104,7 @@ class Workflow:
 
     def add_agent(
         self,
-        agent_class: Type[BaseAgent],
+        agent_class: type[BaseAgent],
         instance_id: str | None = None,
         error_handling: str | None = None,
         **config,
@@ -136,7 +137,7 @@ class Workflow:
 
         return self
 
-    def add_agents(self, *agent_classes: Type[BaseAgent]) -> Workflow:
+    def add_agents(self, *agent_classes: type[BaseAgent]) -> Workflow:
         """Add multiple agents to the workflow.
 
         Args:
@@ -296,7 +297,7 @@ class Workflow:
             result.result = final_result
             result.state = WorkflowState.COMPLETED
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             result.error = f"Workflow timed out after {self.timeout_seconds} seconds"
             result.state = WorkflowState.FAILED
 
@@ -353,7 +354,9 @@ class Workflow:
         current_agent_id = None
 
         # Find the first agent that can process the input
-        first_agent_id = self.type_router.find_agent_for_type(type(input_data))
+        first_agent_id = None
+        if self.type_router:
+            first_agent_id = self.type_router.find_agent_for_type(type(input_data))
         if not first_agent_id:
             # Use the first registered agent as fallback
             first_agent_id = list(self.agent_instances.keys())[0]
@@ -412,7 +415,7 @@ class Workflow:
                     # No more agents, return final result
                     return result.data if hasattr(result, "data") else result
 
-            except Exception as e:
+            except Exception:
                 if agent_config.error_strategy.should_fail_workflow():
                     raise
                 # Skip this agent and try to continue
@@ -445,10 +448,12 @@ class Workflow:
         # Fall back to type-based routing
         if result and hasattr(result, "data"):
             result_type = type(result.data)
+        elif result:
+            result_type = type(result)
         else:
-            result_type = type(result) if result else None
+            return None
 
-        if result_type:
+        if self.type_router:
             return self.type_router.find_agent_for_type(result_type)
 
         return None

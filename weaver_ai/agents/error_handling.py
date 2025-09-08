@@ -5,8 +5,9 @@ from __future__ import annotations
 import asyncio
 import random
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
-from typing import Any, Callable, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -172,7 +173,7 @@ class CircuitBreaker(ErrorStrategy):
 
     # Runtime state (not serialized)
     failure_count: int = Field(0, exclude=True)
-    last_failure_time: Optional[datetime] = Field(None, exclude=True)
+    last_failure_time: datetime | None = Field(None, exclude=True)
     state: str = Field("closed", exclude=True)  # closed, open, half_open
     half_open_successes: int = Field(0, exclude=True)
 
@@ -215,7 +216,7 @@ class CircuitBreaker(ErrorStrategy):
 
             return result
 
-        except Exception as e:
+        except Exception:
             self._record_failure()
 
             # Check if we should open the circuit
@@ -292,12 +293,10 @@ class AdaptiveRetry(ErrorStrategy):
             Last exception if all retries fail
         """
         last_exception = None
-        succeeded = False
 
         for attempt in range(self.current_retries + 1):
             try:
                 result = await func(*args, **kwargs)
-                succeeded = True
                 self._record_execution(True)
                 self._adjust_retries()
                 return result
@@ -368,7 +367,7 @@ class TimeoutStrategy(ErrorStrategy):
             return await asyncio.wait_for(
                 func(*args, **kwargs), timeout=self.timeout_seconds
             )
-        except asyncio.TimeoutError:
+        except TimeoutError:
             if self.fallback_value is not None:
                 return self.fallback_value
             raise
@@ -399,10 +398,9 @@ class CompositeStrategy(ErrorStrategy):
 
         # Wrap with each strategy in reverse order
         for strategy in reversed(self.strategies):
-            prev = current
-
-            async def new_wrapped(*a, **kw):
-                return await strategy.execute(prev, *a, **kw)
+            # Use default parameter to bind loop variables
+            async def new_wrapped(*a, _strategy=strategy, _prev=current, **kw):
+                return await _strategy.execute(_prev, *a, **kw)
 
             current = new_wrapped
 

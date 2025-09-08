@@ -3,12 +3,10 @@
 from __future__ import annotations
 
 import asyncio
-import time
 from datetime import UTC, datetime, timedelta
 
 import pytest
 import pytest_asyncio
-import redis.asyncio as aioredis
 from fakeredis import FakeAsyncRedis
 
 from weaver_ai.memory import AgentMemory, MemoryStrategy

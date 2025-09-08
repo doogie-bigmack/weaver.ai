@@ -11,7 +11,6 @@ The workflow automatically routes data between agents based on types.
 
 import asyncio
 from datetime import datetime
-from typing import List
 
 from pydantic import BaseModel, Field
 
@@ -33,8 +32,8 @@ class ResearchData(BaseModel):
     """Raw research data collected."""
 
     topic: str
-    sources: List[str] = Field(default_factory=list)
-    raw_content: List[str] = Field(default_factory=list)
+    sources: list[str] = Field(default_factory=list)
+    raw_content: list[str] = Field(default_factory=list)
     metadata: dict = Field(default_factory=dict)
     collected_at: datetime = Field(default_factory=datetime.now)
 
@@ -43,9 +42,9 @@ class Analysis(BaseModel):
     """Analyzed data with insights."""
 
     topic: str
-    key_findings: List[str] = Field(default_factory=list)
-    trends: List[str] = Field(default_factory=list)
-    recommendations: List[str] = Field(default_factory=list)
+    key_findings: list[str] = Field(default_factory=list)
+    trends: list[str] = Field(default_factory=list)
+    recommendations: list[str] = Field(default_factory=list)
     confidence_score: float = 0.0
     analysis_method: str = "statistical"
 
@@ -55,8 +54,8 @@ class Report(BaseModel):
 
     title: str
     executive_summary: str
-    sections: List[dict] = Field(default_factory=list)
-    conclusions: List[str] = Field(default_factory=list)
+    sections: list[dict] = Field(default_factory=list)
+    conclusions: list[str] = Field(default_factory=list)
     generated_at: datetime = Field(default_factory=datetime.now)
 
 
@@ -164,7 +163,7 @@ class Analyst(BaseAgent):
             2. Trends
             3. Recommendations"""
 
-            response = await self.model_router.generate(prompt)
+            await self.model_router.generate(prompt)
 
             # Parse response (in production, use structured output)
             analysis.key_findings = [
@@ -250,7 +249,7 @@ class Reporter(BaseAgent):
         report.conclusions = [
             f"The analysis of {analysis.topic} reveals significant insights.",
             f"Confidence in findings: {analysis.confidence_score * 100:.0f}%",
-            f"Further research recommended in identified trend areas.",
+            "Further research recommended in identified trend areas.",
         ]
 
         print(f"  ✅ Report generated with {len(report.sections)} sections")
@@ -283,10 +282,10 @@ async def main():
     if isinstance(report, Report):
         print(f"\n📄 {report.title}")
         print(f"\nExecutive Summary:\n{report.executive_summary}")
-        print(f"\nSections:")
+        print("\nSections:")
         for section in report.sections:
             print(f"  • {section['title']}: {len(section['content'])} items")
-        print(f"\nConclusions:")
+        print("\nConclusions:")
         for conclusion in report.conclusions:
             print(f"  • {conclusion}")
 
@@ -340,7 +339,7 @@ async def main():
     report3 = await intervention_workflow.run(request3)
 
     if isinstance(report3, Report):
-        print(f"✅ Intervention-enabled workflow completed")
+        print("✅ Intervention-enabled workflow completed")
         print(f"   Generated at: {report3.generated_at}")
 
     print("\n" + "=" * 60)

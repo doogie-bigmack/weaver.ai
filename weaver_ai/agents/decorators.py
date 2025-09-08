@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Type
+from collections.abc import Callable
 
 from .base import BaseAgent
 
@@ -11,7 +11,7 @@ def agent(
     agent_type: str | None = None,
     capabilities: list[str] | None = None,
     memory_strategy: str | None = None,
-) -> callable:
+) -> Callable[[type], type[BaseAgent]]:
     """Decorator for creating agents with minimal boilerplate.
 
     Args:
@@ -23,7 +23,7 @@ def agent(
         Decorated agent class
     """
 
-    def decorator(cls: Type) -> Type[BaseAgent]:
+    def decorator(cls: type) -> type[BaseAgent]:
         # If the class already inherits from BaseAgent, just modify it
         if issubclass(cls, BaseAgent):
             # Set class attributes from decorator

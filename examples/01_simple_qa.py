@@ -6,7 +6,6 @@ a single agent that answers questions using an LLM.
 """
 
 import asyncio
-from typing import Any
 
 from pydantic import BaseModel
 

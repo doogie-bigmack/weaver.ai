@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import inspect
-from typing import Any, Dict, List, Optional, Type, get_type_hints
+from typing import Any, get_type_hints
 
 from pydantic import BaseModel
 
@@ -13,18 +13,18 @@ from weaver_ai.agents import BaseAgent
 class TypeGraph(BaseModel):
     """Graph of agent input/output types for routing."""
 
-    agents: Dict[str, AgentTypeInfo] = {}
-    type_to_agents: Dict[str, List[str]] = {}
-    connections: List[TypeConnection] = []
+    agents: dict[str, AgentTypeInfo] = {}
+    type_to_agents: dict[str, list[str]] = {}
+    connections: list[TypeConnection] = []
 
 
 class AgentTypeInfo(BaseModel):
     """Type information for an agent."""
 
     agent_id: str
-    input_types: List[str] = []
-    output_types: List[str] = []
-    capabilities: List[str] = []
+    input_types: list[str] = []
+    output_types: list[str] = []
+    capabilities: list[str] = []
 
 
 class TypeConnection(BaseModel):
@@ -46,7 +46,7 @@ class TypeBasedRouter:
     """
 
     def __init__(self):
-        self.agents: Dict[str, BaseAgent] = {}
+        self.agents: dict[str, BaseAgent] = {}
         self.type_graph = TypeGraph()
 
     def register_agent(self, agent_id: str, agent: BaseAgent):
@@ -71,7 +71,7 @@ class TypeBasedRouter:
         # Update connections
         self._update_connections()
 
-    def find_agent_for_type(self, data_type: Type) -> Optional[str]:
+    def find_agent_for_type(self, data_type: type) -> str | None:
         """Find an agent that can process the given type.
 
         Args:
@@ -102,9 +102,7 @@ class TypeBasedRouter:
 
         return None
 
-    def find_next_agent(
-        self, current_agent_id: str, output_type: Type
-    ) -> Optional[str]:
+    def find_next_agent(self, current_agent_id: str, output_type: type) -> str | None:
         """Find the next agent in the workflow based on output type.
 
         Args:
@@ -133,9 +131,9 @@ class TypeBasedRouter:
 
     def validate_workflow_completeness(
         self,
-        agents: List[str],
-        input_type: Type,
-        expected_output_type: Type | None = None,
+        agents: list[str],
+        input_type: type,
+        expected_output_type: type | None = None,
     ) -> bool:
         """Validate that a workflow can execute completely.
 
@@ -191,8 +189,8 @@ class TypeBasedRouter:
         return True
 
     def get_workflow_path(
-        self, input_type: Type, output_type: Type, max_length: int = 10
-    ) -> List[str]:
+        self, input_type: type, output_type: type, max_length: int = 10
+    ) -> list[str]:
         """Find a path of agents from input to output type.
 
         Args:
@@ -215,7 +213,7 @@ class TypeBasedRouter:
         from collections import deque
 
         queue = deque([(agent, [agent]) for agent in start_agents])
-        visited = set()
+        visited: set[str] = set()
 
         while queue and len(visited) < max_length * len(self.agents):
             current_agent, path = queue.popleft()
@@ -321,7 +319,7 @@ class TypeBasedRouter:
                         )
                         self.type_graph.connections.append(connection)
 
-    def _get_type_name(self, type_obj: Type) -> str:
+    def _get_type_name(self, type_obj: type) -> str:
         """Get string name for a type object.
 
         Args:
@@ -345,7 +343,7 @@ class TypeBasedRouter:
         else:
             return str(type_obj)
 
-    def _is_compatible_type(self, data_type: Type, registered_type: str) -> bool:
+    def _is_compatible_type(self, data_type: type, registered_type: str) -> bool:
         """Check if a data type is compatible with a registered type.
 
         Args:
