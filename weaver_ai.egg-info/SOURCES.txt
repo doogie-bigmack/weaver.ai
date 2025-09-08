@@ -5,11 +5,13 @@ tests/test_a2a_envelope.py
 tests/test_agent_math.py
 tests/test_gateway_smoke.py
 tests/test_mcp_server_client.py
+tests/test_memory_persistence.py
 tests/test_models.py
 tests/test_security_auth.py
 tests/test_security_guardrails.py
 tests/test_security_ratelimit.py
 tests/test_security_rbac.py
+tests/test_workflow.py
 weaver_ai/__init__.py
 weaver_ai/a2a.py
 weaver_ai/agent.py
@@ -22,6 +24,7 @@ weaver_ai/settings.py
 weaver_ai/telemetry.py
 weaver_ai/tools.py
 weaver_ai/verifier.py
+weaver_ai/workflow.py
 weaver_ai.egg-info/PKG-INFO
 weaver_ai.egg-info/SOURCES.txt
 weaver_ai.egg-info/dependency_links.txt
