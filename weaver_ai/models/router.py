@@ -1,7 +1,5 @@
 """Simple model router for selecting appropriate models."""
 
-from typing import Optional
-
 from ..cache import CacheConfig
 from .base import ModelAdapter, ModelResponse
 from .cached import CachedModelAdapter
@@ -16,7 +14,7 @@ class ModelRouter:
         self,
         use_connection_pooling: bool = True,
         use_caching: bool = False,
-        cache_config: Optional[CacheConfig] = None,
+        cache_config: CacheConfig | None = None,
     ):
         self.models: dict[str, ModelAdapter] = {}
         self.default_model: str | None = None
