@@ -9,10 +9,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from pydantic import BaseModel
 
-from weaver_ai import Workflow
 from weaver_ai.agents import BaseAgent, agent
 from weaver_ai.events import Event
-from weaver_ai.workflow import WorkflowResult, WorkflowState
+from weaver_ai.workflow import Workflow, WorkflowResult, WorkflowState
 
 
 # Test data models

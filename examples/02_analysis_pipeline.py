@@ -14,9 +14,9 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field
 
-from weaver_ai import Workflow
 from weaver_ai.agents import BaseAgent, agent
 from weaver_ai.events import Event
+from weaver_ai.workflow import Workflow
 
 
 # Data models for the workflow

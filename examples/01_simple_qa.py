@@ -9,9 +9,9 @@ import asyncio
 
 from pydantic import BaseModel
 
-from weaver_ai import Workflow
 from weaver_ai.agents import BaseAgent, agent
 from weaver_ai.events import Event
+from weaver_ai.workflow import Workflow
 
 
 class Question(BaseModel):
