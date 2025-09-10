@@ -311,40 +311,162 @@ async def test_my_agent():
 
 ## 🐳 Docker Development
 
-### Build and Run
+### Quick Start with Docker
 
 ```bash
-# Build development image
-docker build -f Dockerfile.test -t weaver-dev .
+# 1. Clone the repository
+git clone https://github.com/doogie-bigmack/weaver.ai.git
+cd weaver.ai
 
-# Run tests in container
-docker run --rm weaver-dev
-
-# Build production image
+# 2. Build the Docker image
 docker build -t weaver:latest .
 
-# Run production server
-docker run -p 8000:8000 \
+# 3. Run the container
+docker run -d \
+  --name weaver-ai \
+  -p 8000:8000 \
   -e JWT_SECRET=$(openssl rand -hex 32) \
+  -e LOG_LEVEL=INFO \
+  weaver:latest
+
+# 4. Check that it's running
+docker logs weaver-ai
+
+# 5. Test the API
+curl -X POST http://localhost:8000/ask \
+  -H "Authorization: Bearer your-token-here" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "Hello, Weaver!"}'
+
+# 6. Stop the container when done
+docker stop weaver-ai
+docker rm weaver-ai
+```
+
+### Development with Docker
+
+```bash
+# Build development image with hot reload
+docker build -f Dockerfile.test -t weaver-dev .
+
+# Run with volume mounting for live code updates
+docker run -it --rm \
+  --name weaver-dev \
+  -p 8000:8000 \
+  -v $(pwd)/weaver_ai:/app/weaver_ai \
+  -v $(pwd)/tests:/app/tests \
+  -e JWT_SECRET=dev-secret-key \
+  -e LOG_LEVEL=DEBUG \
+  weaver-dev
+
+# Run tests in container
+docker run --rm weaver-dev pytest
+
+# Run with Redis for distributed features
+docker run -d --name redis redis:alpine
+docker run -d \
+  --name weaver-ai \
+  --link redis:redis \
+  -p 8000:8000 \
+  -e JWT_SECRET=$(openssl rand -hex 32) \
+  -e REDIS_URL=redis://redis:6379 \
   weaver:latest
 ```
 
-### Docker Compose
+### Docker Compose (Recommended)
+
+Create a `docker-compose.yml` file:
 
 ```yaml
 # docker-compose.yml
 version: '3.8'
+
 services:
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+
   weaver:
     build: .
     ports:
       - "8000:8000"
     environment:
-      - JWT_SECRET=${JWT_SECRET}
-      - LOG_LEVEL=DEBUG
+      - JWT_SECRET=${JWT_SECRET:-$(openssl rand -hex 32)}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - REDIS_URL=redis://redis:6379
+      - RATE_LIMIT_RPM=${RATE_LIMIT_RPM:-60}
+      - PII_REDACT=${PII_REDACT:-false}
+    depends_on:
+      - redis
     volumes:
-      - ./weaver_ai:/app/weaver_ai  # Hot reload
+      - ./weaver_ai:/app/weaver_ai  # Hot reload for development
+      - ./tests:/app/tests
+    command: python -m uvicorn weaver_ai.main:app --host 0.0.0.0 --port 8000 --reload
+
+volumes:
+  redis-data:
 ```
+
+Then run:
+
+```bash
+# Start all services
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Run tests
+docker-compose exec weaver pytest
+
+# Stop all services
+docker-compose down
+
+# Stop and remove volumes
+docker-compose down -v
+```
+
+### Production Deployment with Docker
+
+```bash
+# Build optimized production image
+docker build \
+  --target production \
+  -t weaver:prod \
+  --build-arg VERSION=$(git describe --tags --always) \
+  .
+
+# Run with production settings
+docker run -d \
+  --name weaver-prod \
+  --restart unless-stopped \
+  -p 8000:8000 \
+  -e JWT_SECRET="${JWT_SECRET}" \
+  -e LOG_LEVEL=WARNING \
+  -e RATE_LIMIT_RPM=100 \
+  -e PII_REDACT=true \
+  --memory="1g" \
+  --cpus="1.0" \
+  weaver:prod
+
+# Health check
+docker exec weaver-prod curl -f http://localhost:8000/health || exit 1
+```
+
+### Docker Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `JWT_SECRET` | Authentication secret key (required) | - |
+| `LOG_LEVEL` | Logging level (DEBUG, INFO, WARNING, ERROR) | INFO |
+| `REDIS_URL` | Redis connection URL | - |
+| `RATE_LIMIT_RPM` | Rate limit per minute | 60 |
+| `PII_REDACT` | Enable PII redaction | false |
+| `MODEL_ROUTER_STRATEGY` | Router strategy (direct, complexity, cost) | direct |
+| `APPROVAL_REQUIRED` | Require approval for sensitive ops | false |
 
 ## 🤝 Contributing
 
