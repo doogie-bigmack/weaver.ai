@@ -55,13 +55,15 @@ async def whoami(request: Request):
 @app.post("/ask")
 async def ask(request: Request):
     user = enforce_limit(request)
-    
+
     # Get request data with error handling
     try:
         data = await request.json()
-    except Exception as e:
-        raise HTTPException(status_code=400, detail="Invalid JSON in request body")
-    
+    except Exception:
+        raise HTTPException(
+            status_code=400, detail="Invalid JSON in request body"
+        ) from None
+
     # Validate request data using Pydantic model
     try:
         req = QueryRequest(**data)
@@ -69,24 +71,26 @@ async def ask(request: Request):
         # Return user-friendly validation errors
         errors = []
         for error in e.errors():
-            field = '.'.join(str(loc) for loc in error['loc'])
-            msg = error['msg']
+            field = ".".join(str(loc) for loc in error["loc"])
+            msg = error["msg"]
             errors.append(f"{field}: {msg}")
-        raise HTTPException(status_code=422, detail=f"Validation error: {'; '.join(errors)}")
-    except Exception as e:
-        raise HTTPException(status_code=400, detail="Invalid request data")
-    
+        raise HTTPException(
+            status_code=422, detail=f"Validation error: {'; '.join(errors)}"
+        ) from e
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid request data") from None
+
     # Apply input guards
     policies = load_guardrails()
     policy.input_guard(req.query, policies)
-    
+
     # Process request
     agent = get_agent()
     answer, citations, metrics = agent.ask(req.query, req.user_id, user)
-    
+
     # Apply output guards
     out = policy.output_guard(answer, policies, redact=_settings.pii_redact)
-    
+
     # Return response
     return QueryResponse(
         answer=out.text,
