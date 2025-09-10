@@ -179,7 +179,7 @@ class SimpleAgentWrapper(BaseAgent):
             raise last_error
 
 
-def agent(
+def agent(  # noqa: UP047
     func: F | None = None,
     *,
     model: str = "gpt-4",
