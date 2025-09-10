@@ -38,8 +38,8 @@ class WorkflowResult(BaseModel):
     error: str | None = None
     start_time: datetime
     end_time: datetime | None = None
-    agent_results: dict[str, Any] = {}
-    metrics: dict[str, Any] = {}
+    agent_results: dict[str, Any] = Field(default_factory=dict)
+    metrics: dict[str, Any] = Field(default_factory=dict)
 
 
 class AgentConfig(BaseModel):
@@ -48,7 +48,12 @@ class AgentConfig(BaseModel):
     agent_class: type[BaseAgent]
     instance_id: str = Field(default_factory=lambda: uuid.uuid4().hex)
     error_strategy: ErrorStrategy = Field(default_factory=RetryWithBackoff)
-    config: dict[str, Any] = {}
+    model_name: str | None = None  # Specific model for this agent
+    api_key: str | None = None  # Agent-specific API key (BYOK)
+    model_settings: dict[str, Any] = Field(default_factory=dict)  # Model settings
+    agent_settings: dict[str, Any] = Field(
+        default_factory=dict
+    )  # Additional agent configuration
 
 
 class RouteCondition(BaseModel):
@@ -107,6 +112,10 @@ class Workflow:
         agent_class: type[BaseAgent],
         instance_id: str | None = None,
         error_handling: str | None = None,
+        model: str | None = None,
+        api_key: str | None = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
         **config,
     ) -> Workflow:
         """Add a single agent to the workflow.
@@ -115,6 +124,10 @@ class Workflow:
             agent_class: Agent class to instantiate
             instance_id: Optional instance ID for routing
             error_handling: Error handling strategy name
+            model: Model name for this agent (e.g., 'gpt-4', 'claude-3-opus')
+            api_key: API key for this agent's model (BYOK)
+            temperature: Model temperature setting
+            max_tokens: Maximum tokens for model responses
             **config: Additional agent configuration
 
         Returns:
@@ -123,15 +136,37 @@ class Workflow:
         if instance_id is None:
             instance_id = agent_class.__name__.lower()
 
+        # Extract error strategy options from config
+        error_options = {}
+        if "max_retries" in config:
+            error_options["max_retries"] = config.pop("max_retries")
+        if "retry_delay" in config:
+            error_options["retry_delay"] = config.pop("retry_delay")
+
         # Create error strategy
-        error_strategy = self._create_error_strategy(error_handling)
+        if error_handling:
+            error_strategy = self._create_error_strategy(
+                error_handling, **error_options
+            )
+        else:
+            error_strategy = self.default_error_strategy
+
+        # Build model configuration
+        model_settings = {}
+        if temperature is not None:
+            model_settings["temperature"] = temperature
+        if max_tokens is not None:
+            model_settings["max_tokens"] = max_tokens
 
         self.agents.append(
             AgentConfig(
                 agent_class=agent_class,
                 instance_id=instance_id,
                 error_strategy=error_strategy,
-                config=config,
+                model_name=model,
+                api_key=api_key,
+                model_settings=model_settings,
+                agent_settings=config,
             )
         )
 
@@ -301,9 +336,22 @@ class Workflow:
             result.error = f"Workflow timed out after {self.timeout_seconds} seconds"
             result.state = WorkflowState.FAILED
 
+        except IndexError:
+            # Always re-raise IndexError for empty workflows
+            raise
+
         except Exception as e:
             result.error = str(e)
             result.state = WorkflowState.FAILED
+
+            # Check if any agent has fail_fast strategy
+            for agent_config in self.agents:
+                if (
+                    hasattr(agent_config.error_strategy, "should_fail_workflow")
+                    and agent_config.error_strategy.should_fail_workflow()
+                ):
+                    # Re-raise for fail-fast strategy
+                    raise
 
         finally:
             result.end_time = datetime.now(UTC)
@@ -325,17 +373,85 @@ class Workflow:
 
     async def _create_agents(self):
         """Create and initialize agent instances."""
+        if not self.agents:
+            raise IndexError("Cannot run workflow with no agents")
+
         for agent_config in self.agents:
             # Create agent instance
-            agent = agent_config.agent_class(**agent_config.config)
+            agent = agent_config.agent_class(**agent_config.agent_settings)
+
+            # Create model router for this specific agent if model is specified
+            if agent_config.model_name:
+                model_router = await self._create_agent_router(
+                    model_name=agent_config.model_name,
+                    api_key=agent_config.api_key,
+                    config=agent_config.model_settings,
+                )
+            else:
+                # Use shared/default router
+                model_router = self.model_router
 
             # Initialize with connections
-            await agent.initialize(
-                redis_url=self.redis_url, model_router=self.model_router
-            )
+            await agent.initialize(redis_url=self.redis_url, model_router=model_router)
 
             # Store instance
             self.agent_instances[agent_config.instance_id] = agent
+
+    async def _create_agent_router(
+        self, model_name: str, api_key: str | None, config: dict[str, Any]
+    ) -> ModelRouter:
+        """Create a model router for a specific agent.
+
+        Args:
+            model_name: Name of the model to use
+            api_key: Optional API key for the model (BYOK)
+            config: Model configuration (temperature, max_tokens, etc.)
+
+        Returns:
+            Configured ModelRouter for the agent
+        """
+        import os
+
+        from weaver_ai.models import ModelRouter
+        from weaver_ai.models.anthropic_adapter import AnthropicAdapter
+        from weaver_ai.models.mock import MockAdapter
+        from weaver_ai.models.openai_adapter import OpenAIAdapter
+
+        router = ModelRouter()
+
+        # Determine model type and create appropriate adapter
+        if "gpt" in model_name.lower():
+            # OpenAI model
+            api_key = api_key or os.getenv("OPENAI_API_KEY")
+            if api_key:
+                adapter = OpenAIAdapter(model=model_name)
+                # Pass API key through environment for security
+                os.environ["OPENAI_API_KEY"] = api_key
+            else:
+                # Fall back to mock if no API key
+                adapter = MockAdapter(name=f"mock_{model_name}")
+        elif "claude" in model_name.lower():
+            # Anthropic model
+            api_key = api_key or os.getenv("ANTHROPIC_API_KEY")
+            if api_key:
+                adapter = AnthropicAdapter(model=model_name)
+                # Pass API key through environment for security
+                os.environ["ANTHROPIC_API_KEY"] = api_key
+            else:
+                # Fall back to mock if no API key
+                adapter = MockAdapter(name=f"mock_{model_name}")
+        elif model_name == "mock" or model_name.startswith("mock"):
+            # Mock model (no API key needed)
+            adapter = MockAdapter(name=model_name)
+        else:
+            # Unknown model type, fall back to mock
+            adapter = MockAdapter(name=f"mock_{model_name}")
+
+        # Register the adapter
+        router.register(model_name, adapter)
+        router.default_model = model_name
+
+        return router
 
     def _setup_routing(self):
         """Setup type-based routing."""
@@ -400,8 +516,8 @@ class Workflow:
                 if result is None:
                     break
 
-                # Store agent result
-                self.agent_instances[current_agent_id] = result
+                # Store agent result (but don't overwrite the agent instance)
+                # Results are tracked in workflow result metadata
 
                 # Find next agent
                 next_agent_id = await self._find_next_agent(
