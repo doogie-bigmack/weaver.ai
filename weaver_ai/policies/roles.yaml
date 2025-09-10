@@ -1,4 +1,4 @@
 user:
   - tool:python_eval
 admin:
-  - admin
+  - admin:all
