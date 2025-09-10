@@ -33,14 +33,15 @@ def test_model_router():
     # Test with default model
     response = asyncio.run(router.generate("Test prompt"))
     assert response.text
-    assert response.model == "mock"
+    # Model name can be "mock" or "pooled-mock" depending on connection pooling
+    assert response.model in ["mock", "pooled-mock"]
 
     # Register another mock model
     router.register("mock2", MockAdapter("mock2"))
     assert "mock2" in router.list_models()
 
     # Test with specific model
-    response = asyncio.run(router.generate("Test", model="mock2"))
+    response = asyncio.run(router.generate("Test", model_name="mock2"))
     assert response.model == "mock2"
 
 
