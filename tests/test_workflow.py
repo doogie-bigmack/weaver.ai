@@ -155,7 +155,7 @@ class TestWorkflow:
                     result = await workflow.run(DataA(value="start"))
 
         # Result should be DataC after going through both agents
-        assert isinstance(result, DataB | DataC)
+        assert isinstance(result.result, DataB | DataC)
 
     @pytest.mark.asyncio
     async def test_manual_routing_override(self):
@@ -216,8 +216,8 @@ class TestWorkflow:
                 result = await workflow.run(InputData(value=1, text="test"))
 
         assert attempt_count == 3  # Should retry until success
-        assert isinstance(result, ProcessedData)
-        assert result.message == "Success after retries"
+        assert isinstance(result.result, ProcessedData)
+        assert result.result.message == "Success after retries"
 
     @pytest.mark.asyncio
     async def test_error_handling_fail_fast(self):
@@ -458,3 +458,115 @@ class TestWorkflow:
 
         # Cleanup should have been called
         assert cleanup_called
+
+    @pytest.mark.asyncio
+    async def test_per_agent_model_configuration(self):
+        """Test that agents can have different models configured."""
+
+        # Create workflow with different models per agent
+        workflow = (
+            Workflow("model_test")
+            .add_agent(ProcessorAgent, model="gpt-4", temperature=0.3)
+            .add_agent(AggregatorAgent, model="gpt-5-o1-mini", max_tokens=2000)
+        )
+
+        # Check that agent configs have model settings
+        assert len(workflow.agents) == 2
+
+        processor_config = workflow.agents[0]
+        assert processor_config.model_name == "gpt-4"
+        assert processor_config.model_settings["temperature"] == 0.3
+
+        aggregator_config = workflow.agents[1]
+        assert aggregator_config.model_name == "gpt-5-o1-mini"
+        assert aggregator_config.model_settings["max_tokens"] == 2000
+
+    @pytest.mark.asyncio
+    async def test_agent_with_custom_api_key(self):
+        """Test that agents can use custom API keys (BYOK)."""
+
+        custom_key = "sk-custom-test-key"
+
+        workflow = Workflow("byok_test").add_agent(
+            ProcessorAgent, model="gpt-4", api_key=custom_key
+        )
+
+        agent_config = workflow.agents[0]
+        assert agent_config.model_name == "gpt-4"
+        assert agent_config.api_key == custom_key
+
+    @pytest.mark.asyncio
+    async def test_mixed_model_workflow(self):
+        """Test workflow with mix of paid and free models."""
+
+        workflow = (
+            Workflow("mixed_models")
+            .add_agent(ProcessorAgent, model="gpt-4")  # Paid
+            .add_agent(ProcessorAgent, model="mock", instance_id="filter")  # Free
+            .add_agent(AggregatorAgent, model="gpt-5-o1-mini")  # Paid but cheap
+        )
+
+        assert len(workflow.agents) == 3
+        assert workflow.agents[0].model_name == "gpt-4"
+        assert workflow.agents[1].model_name == "mock"
+        assert workflow.agents[2].model_name == "gpt-5-o1-mini"
+
+    @pytest.mark.asyncio
+    async def test_model_fallback_to_mock(self):
+        """Test that agents fall back to mock when no API key available."""
+
+        workflow = Workflow("fallback_test")
+
+        with patch("weaver_ai.workflow.RedisEventMesh") as mock_mesh:
+            mock_mesh.return_value.connect = AsyncMock()
+
+            # Mock the _create_agent_router to verify fallback behavior
+            with patch.object(workflow, "_create_agent_router") as mock_create_router:
+                mock_router = MagicMock()
+                mock_create_router.return_value = mock_router
+
+                # Add agent with model that requires API key
+                workflow.add_agent(ProcessorAgent, model="gpt-4")
+
+                # Mock environment to have no API key
+                with patch.dict("os.environ", {}, clear=True):
+                    await workflow._initialize()
+                    await workflow._create_agents()
+
+                    # Should have created router with fallback
+                    mock_create_router.assert_called_once()
+                    call_args = mock_create_router.call_args
+                    assert call_args[1]["model_name"] == "gpt-4"
+                    assert call_args[1]["api_key"] is None
+
+    @pytest.mark.asyncio
+    async def test_workflow_with_model_config(self):
+        """Test workflow with detailed model configuration."""
+
+        workflow = (
+            Workflow("config_test")
+            .add_agent(
+                ProcessorAgent,
+                model="gpt-3.5-turbo",
+                temperature=0.7,
+                max_tokens=1500,
+                instance_id="creative",
+            )
+            .add_agent(
+                ProcessorAgent,
+                model="gpt-3.5-turbo",
+                temperature=0.1,
+                max_tokens=500,
+                instance_id="precise",
+            )
+        )
+
+        # Different configs for same model
+        creative_config = workflow.agents[0]
+        precise_config = workflow.agents[1]
+
+        assert creative_config.model_name == precise_config.model_name
+        assert creative_config.model_settings["temperature"] == 0.7
+        assert precise_config.model_settings["temperature"] == 0.1
+        assert creative_config.model_settings["max_tokens"] == 1500
+        assert precise_config.model_settings["max_tokens"] == 500

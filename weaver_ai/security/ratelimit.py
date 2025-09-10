@@ -18,7 +18,7 @@ class TokenBucket:
     def consume(self, amount: int = 1) -> bool:
         now = time.time()
         self.tokens = min(
-            self.capacity, self.tokens + (now - self.timestamp) * self.rate
+            self.capacity, self.tokens + int((now - self.timestamp) * self.rate)
         )
         self.timestamp = now
         if self.tokens >= amount:

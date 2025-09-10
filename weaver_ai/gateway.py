@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
+from pydantic import ValidationError
 
 from .agent import AgentOrchestrator
 from .mcp import MCPClient
@@ -54,17 +55,43 @@ async def whoami(request: Request):
 @app.post("/ask")
 async def ask(request: Request):
     user = enforce_limit(request)
-    data = (
-        await request.json()
-        if hasattr(request, "json") and callable(request.json)
-        else {}
-    )
-    req = QueryRequest(**data)
+
+    # Get request data with error handling
+    try:
+        data = await request.json()
+    except Exception:
+        raise HTTPException(
+            status_code=400, detail="Invalid JSON in request body"
+        ) from None
+
+    # Validate request data using Pydantic model
+    try:
+        req = QueryRequest(**data)
+    except ValidationError as e:
+        # Return user-friendly validation errors
+        errors = []
+        for error in e.errors():
+            field = ".".join(str(loc) for loc in error["loc"])
+            msg = error["msg"]
+            errors.append(f"{field}: {msg}")
+        raise HTTPException(
+            status_code=422, detail=f"Validation error: {'; '.join(errors)}"
+        ) from e
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid request data") from None
+
+    # Apply input guards
     policies = load_guardrails()
     policy.input_guard(req.query, policies)
+
+    # Process request
     agent = get_agent()
     answer, citations, metrics = agent.ask(req.query, req.user_id, user)
+
+    # Apply output guards
     out = policy.output_guard(answer, policies, redact=_settings.pii_redact)
+
+    # Return response
     return QueryResponse(
         answer=out.text,
         citations=[Citation(source=c) for c in citations],
