@@ -33,7 +33,7 @@ def require_auth(request: Request):
 
 def enforce_limit(request: Request):
     user = require_auth(request)
-    ratelimit.enforce(user.user_id, _settings)
+    ratelimit.enforce(user.user_id, _settings, request)
     return user
 
 
