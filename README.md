@@ -129,15 +129,59 @@ pip install -e .[dev]
 
 ### Step 2: Configure Environment
 
-```bash
-# Generate a secure JWT secret
-export JWT_SECRET=$(openssl rand -hex 32)
+Weaver AI uses environment variables for configuration. We provide a comprehensive `.env.example` file as a template.
 
-# Optional: Configure other settings
-export PII_REDACT=false          # Enable PII redaction
-export RATE_LIMIT_RPM=60         # Requests per minute
-export LOG_LEVEL=INFO            # Logging level
+```bash
+# Copy the example environment file
+cp .env.example .env
+
+# Edit .env with your configuration
+# IMPORTANT: Add your API keys for the model providers you plan to use
+nano .env  # or use your preferred editor
 ```
+
+**Essential Environment Variables:**
+
+```bash
+# At minimum, you need to configure one model provider:
+
+# For OpenAI models (GPT-4, GPT-3.5, etc.)
+OPENAI_API_KEY=your-openai-api-key-here
+
+# For Anthropic models (Claude)
+ANTHROPIC_API_KEY=your-anthropic-api-key-here
+
+# For Groq (fast inference)
+GROQ_API_KEY=your-groq-api-key-here
+
+# Set your preferred model provider
+WEAVER_MODEL_PROVIDER=openai  # or "anthropic", "groq", "stub" (for testing)
+WEAVER_MODEL_NAME=gpt-4       # or "claude-3-opus-20240229", etc.
+
+# For production deployments, configure security:
+WEAVER_AUTH_MODE=api_key
+WEAVER_ALLOWED_API_KEYS=your-secure-api-key-1,your-secure-api-key-2
+```
+
+**Loading Environment Variables:**
+
+```bash
+# Option 1: Export from .env file (recommended for development)
+export $(cat .env | grep -v '^#' | xargs)
+
+# Option 2: Use python-dotenv (automatic with the framework)
+# The framework automatically loads .env if present
+
+# Option 3: Set individually for testing
+export OPENAI_API_KEY="your-key"
+export WEAVER_MODEL_PROVIDER="openai"
+```
+
+**Security Notes:**
+- Never commit `.env` files with real credentials to version control
+- The `.env` file is already in `.gitignore` for your protection
+- Use different API keys for development, staging, and production
+- Consider using a secrets management service for production deployments
 
 ### Step 3: Set Up Pre-commit Hooks
 
@@ -323,9 +367,9 @@ docker run --rm weaver-dev
 # Build production image
 docker build -t weaver:latest .
 
-# Run production server
+# Run production server with environment file
 docker run -p 8000:8000 \
-  -e JWT_SECRET=$(openssl rand -hex 32) \
+  --env-file .env \
   weaver:latest
 ```
 
@@ -339,12 +383,116 @@ services:
     build: .
     ports:
       - "8000:8000"
-    environment:
-      - JWT_SECRET=${JWT_SECRET}
-      - LOG_LEVEL=DEBUG
+    env_file:
+      - .env  # Load all environment variables from .env file
     volumes:
-      - ./weaver_ai:/app/weaver_ai  # Hot reload
+      - ./weaver_ai:/app/weaver_ai  # Hot reload for development
 ```
+
+```bash
+# Start all services
+docker-compose up
+
+# Run in background
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop services
+docker-compose down
+```
+
+## 🚀 Production Deployment
+
+### Environment Configuration
+
+1. **Set up production environment file:**
+   ```bash
+   # Copy and configure for production
+   cp .env.example .env.production
+
+   # Edit with production values
+   # - Use strong, unique API keys
+   # - Enable security features
+   # - Configure monitoring
+   ```
+
+2. **Essential production settings:**
+   ```bash
+   # Security
+   WEAVER_AUTH_MODE=jwt
+   WEAVER_JWT_PUBLIC_KEY="your-rsa-public-key"
+   WEAVER_PII_REDACT=true
+
+   # Performance
+   WEAVER_RATELIMIT_RPS=10
+   WEAVER_REQUEST_TIMEOUT_MS=30000
+
+   # Monitoring
+   WEAVER_TELEMETRY_ENABLED=true
+   WEAVER_TELEMETRY_ENDPOINT=https://your-telemetry-collector.com
+   WEAVER_AUDIT_PATH=/var/log/weaver/audit.log
+
+   # Production database
+   REDIS_HOST=your-redis-host.com
+   REDIS_PASSWORD=your-redis-password
+   ```
+
+3. **Deploy with Docker:**
+   ```bash
+   # Build optimized production image
+   docker build -t weaver:prod --target production .
+
+   # Run with production config
+   docker run -d \
+     --name weaver-prod \
+     --restart unless-stopped \
+     -p 8000:8000 \
+     --env-file .env.production \
+     -v /var/log/weaver:/var/log/weaver \
+     weaver:prod
+   ```
+
+4. **Deploy with Kubernetes:**
+   ```bash
+   # Create secret from env file
+   kubectl create secret generic weaver-config --from-env-file=.env.production
+
+   # Apply deployment
+   kubectl apply -f k8s/deployment.yaml
+   ```
+
+5. **Health checks:**
+   ```bash
+   # Check service health
+   curl http://your-domain.com/health
+
+   # Check readiness
+   curl http://your-domain.com/ready
+   ```
+
+### Security Checklist
+
+- [ ] All API keys are unique and strong
+- [ ] JWT keys are RSA 2048-bit or stronger
+- [ ] TLS/SSL is configured for all endpoints
+- [ ] Rate limiting is enabled
+- [ ] Audit logging is configured
+- [ ] PII redaction is enabled
+- [ ] URL allowlist/denylist is configured
+- [ ] Regular security updates are scheduled
+- [ ] Secrets are managed via secure service (AWS Secrets Manager, Vault, etc.)
+
+### Monitoring
+
+Monitor these key metrics in production:
+- Request latency (p50, p95, p99)
+- Error rates by endpoint
+- Rate limit violations
+- Authentication failures
+- Model API usage and costs
+- Memory and CPU utilization
 
 ## 🤝 Contributing
 
