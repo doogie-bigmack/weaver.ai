@@ -2,3 +2,54 @@ python_eval:
   required_scopes:
     - tool:python_eval
   sensitivity: low
+  rate_limit: 100  # per minute
+  requires_approval: false
+
+web_search:
+  required_scopes:
+    - tool:web_search
+  sensitivity: low
+  rate_limit: 60
+  requires_approval: false
+
+documentation:
+  required_scopes:
+    - tool:documentation
+  sensitivity: low
+  rate_limit: 100
+  requires_approval: false
+
+database_query:
+  required_scopes:
+    - tool:database
+  sensitivity: high
+  rate_limit: 30
+  requires_approval: true
+
+file_system:
+  required_scopes:
+    - tool:file_system
+  sensitivity: medium
+  rate_limit: 50
+  requires_approval: false
+
+api_call:
+  required_scopes:
+    - tool:api_call
+  sensitivity: medium
+  rate_limit: 100
+  requires_approval: false
+
+code_execution:
+  required_scopes:
+    - tool:code_execution
+  sensitivity: high
+  rate_limit: 10
+  requires_approval: true
+
+sailpoint_iiq:
+  required_scopes:
+    - tool:sailpoint
+  sensitivity: high
+  rate_limit: 30
+  requires_approval: false
