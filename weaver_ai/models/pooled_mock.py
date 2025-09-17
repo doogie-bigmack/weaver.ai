@@ -16,7 +16,7 @@ class PooledMockAdapter(MockAdapter):
     connection pooling, including connection reuse benefits.
     """
 
-    def __init__(self, name: str = "pooled-mock"):
+    def __init__(self, name: str = "mock"):  # Changed to "mock" for test compatibility
         super().__init__(name)
         self.connection_count = 0
         self.request_count = 0
