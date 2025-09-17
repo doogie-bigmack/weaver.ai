@@ -8,19 +8,22 @@ from .base import BaseAgent
 
 
 def agent(
+    cls: type | None = None,
+    *,
     agent_type: str | None = None,
     capabilities: list[str] | None = None,
     memory_strategy: str | None = None,
-) -> Callable[[type], type[BaseAgent]]:
+) -> Callable[[type], type[BaseAgent]] | type[BaseAgent]:
     """Decorator for creating agents with minimal boilerplate.
 
     Args:
+        cls: Class to decorate (when used without parentheses)
         agent_type: Type of agent
         capabilities: List of capabilities
         memory_strategy: Predefined strategy name
 
     Returns:
-        Decorated agent class
+        Decorated agent class or decorator function
     """
 
     def decorator(cls: type) -> type[BaseAgent]:
@@ -109,4 +112,10 @@ def agent(
 
         return DecoratedAgent
 
-    return decorator
+    # Handle both @agent and @agent() usage
+    if cls is None:
+        # Called with parentheses: @agent(agent_type="foo")
+        return decorator
+    else:
+        # Called without parentheses: @agent
+        return decorator(cls)
