@@ -10,8 +10,8 @@ from uuid import uuid4
 from pydantic import BaseModel, Field
 
 from weaver_ai.events import Event
-from weaver_ai.memory import AgentMemory, MemoryStrategy
 from weaver_ai.mcp import MCPClient
+from weaver_ai.memory import AgentMemory, MemoryStrategy
 from weaver_ai.models import ModelRouter
 from weaver_ai.redis import RedisAgentRegistry, RedisEventMesh, WorkQueue
 from weaver_ai.redis.queue import Task
@@ -54,7 +54,7 @@ class BaseAgent(BaseModel):
     model_router: ModelRouter | None = Field(None, exclude=True)
     registry: RedisAgentRegistry | None = Field(None, exclude=True)
     work_queue: WorkQueue | None = Field(None, exclude=True)
-    
+
     # MCP Tool support
     mcp_client: MCPClient | None = Field(None, exclude=True)
     tool_registry: ToolRegistry | None = Field(None, exclude=True)
@@ -96,11 +96,11 @@ class BaseAgent(BaseModel):
 
         # Setup model router
         self.model_router = model_router
-        
+
         # Setup MCP and tools
         self.mcp_client = mcp_client
         self.tool_registry = tool_registry
-        
+
         # Auto-discover available tools based on capabilities
         if self.tool_registry:
             await self._discover_tools()
@@ -314,14 +314,14 @@ class BaseAgent(BaseModel):
             Processing result
         """
         raise NotImplementedError("Subclasses must implement process()")
-    
+
     async def _discover_tools(self) -> None:
         """Discover available tools based on agent capabilities."""
         if not self.tool_registry:
             return
-        
+
         from ..tools import ToolCapability
-        
+
         # Map agent capabilities to tool capabilities
         capability_mapping = {
             "research": [ToolCapability.WEB_SEARCH, ToolCapability.DOCUMENTATION],
@@ -330,9 +330,9 @@ class BaseAgent(BaseModel):
             "integration": [ToolCapability.API_CALL],
             "coding": [ToolCapability.CODE_EXECUTION],
         }
-        
+
         discovered_tools = set()
-        
+
         # Find tools matching agent capabilities
         for agent_cap in self.capabilities:
             if agent_cap in capability_mapping:
@@ -341,34 +341,34 @@ class BaseAgent(BaseModel):
                     for tool in tools:
                         discovered_tools.add(tool.name)
                         self.tool_permissions[tool.name] = True
-        
+
         self.available_tools = list(discovered_tools)
-    
+
     async def execute_tool(
-        self, 
-        tool_name: str, 
+        self,
+        tool_name: str,
         args: dict[str, Any],
-        context: dict[str, Any] | None = None
+        context: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Execute a tool by name.
-        
+
         Args:
             tool_name: Name of the tool to execute
             args: Tool arguments
             context: Optional execution context
-            
+
         Returns:
             Tool execution result
         """
         if not self.tool_registry:
             return {"error": "No tool registry available"}
-        
+
         if tool_name not in self.available_tools:
             return {"error": f"Tool {tool_name} not available"}
-        
+
         if not self.tool_permissions.get(tool_name, False):
             return {"error": f"No permission to use tool {tool_name}"}
-        
+
         # Create execution context
         exec_context = ToolExecutionContext(
             agent_id=self.agent_id,
@@ -376,7 +376,7 @@ class BaseAgent(BaseModel):
             user_id=context.get("user_id", "system") if context else "system",
             metadata=context or {},
         )
-        
+
         # Execute tool
         result = await self.tool_registry.execute_tool(
             tool_name=tool_name,
@@ -384,21 +384,23 @@ class BaseAgent(BaseModel):
             context=exec_context,
             check_permissions=True,
         )
-        
+
         # Store in memory if successful
         if self.memory and result.success:
             # Note: add_tool_usage doesn't exist in AgentMemory yet
             # We'll need to add it or use existing memory methods
-            await self.memory.add_event(Event(
-                event_type="tool_execution",
-                data={
-                    "tool_name": tool_name,
-                    "args": args,
-                    "result": result.data,
-                },
-                metadata={"tool_execution_time": result.execution_time},
-            ))
-        
+            await self.memory.add_event(
+                Event(
+                    event_type="tool_execution",
+                    data={
+                        "tool_name": tool_name,
+                        "args": args,
+                        "result": result.data,
+                    },
+                    metadata={"tool_execution_time": result.execution_time},
+                )
+            )
+
         return result.model_dump()
 
     async def can_process(self, event: Event) -> bool:

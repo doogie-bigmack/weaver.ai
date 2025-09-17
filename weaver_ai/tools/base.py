@@ -13,7 +13,7 @@ from pydantic import BaseModel, Field
 
 class ToolCapability(str, Enum):
     """Tool capability categories."""
-    
+
     WEB_SEARCH = "web_search"
     DATABASE = "database"
     FILE_SYSTEM = "file_system"
@@ -27,7 +27,7 @@ class ToolCapability(str, Enum):
 
 class ToolExecutionContext(BaseModel):
     """Context for tool execution."""
-    
+
     agent_id: str
     workflow_id: Optional[str] = None
     user_id: str
@@ -40,7 +40,7 @@ class ToolExecutionContext(BaseModel):
 
 class ToolResult(BaseModel):
     """Result from tool execution."""
-    
+
     success: bool
     data: Any
     error: Optional[str] = None
@@ -49,7 +49,7 @@ class ToolResult(BaseModel):
     cached: bool = False
     tool_name: str
     tool_version: str = "1.0.0"
-    
+
     def to_json(self) -> str:
         """Convert result to JSON string."""
         return json.dumps(self.model_dump(), default=str)
@@ -57,7 +57,7 @@ class ToolResult(BaseModel):
 
 class Tool(ABC, BaseModel):
     """Abstract base class for all MCP tools."""
-    
+
     name: str
     description: str
     version: str = "1.0.0"
@@ -65,43 +65,41 @@ class Tool(ABC, BaseModel):
     required_scopes: List[str] = Field(default_factory=list)
     input_schema: Dict[str, Any] = Field(default_factory=dict)
     output_schema: Dict[str, Any] = Field(default_factory=dict)
-    
+
     # Runtime configuration
     enabled: bool = True
     rate_limit: Optional[int] = None  # requests per minute
     cost_per_call: float = 0.0  # for cost tracking
     requires_approval: bool = False
-    
+
     # Caching configuration
     cache_enabled: bool = True
     cache_ttl: int = 300  # seconds
-    
+
     class Config:
         arbitrary_types_allowed = True
-    
+
     @abstractmethod
     async def execute(
-        self, 
-        args: Dict[str, Any], 
-        context: ToolExecutionContext
+        self, args: Dict[str, Any], context: ToolExecutionContext
     ) -> ToolResult:
         """Execute the tool with given arguments.
-        
+
         Args:
             args: Tool-specific arguments
             context: Execution context
-            
+
         Returns:
             ToolResult with execution outcome
         """
         pass
-    
+
     def validate_args(self, args: Dict[str, Any]) -> bool:
         """Validate input arguments against schema.
-        
+
         Args:
             args: Arguments to validate
-            
+
         Returns:
             True if valid, raises ValueError if not
         """
@@ -112,14 +110,14 @@ class Tool(ABC, BaseModel):
                 if field not in args:
                     raise ValueError(f"Missing required field: {field}")
         return True
-    
+
     def get_cache_key(self, args: Dict[str, Any], context: ToolExecutionContext) -> str:
         """Generate cache key for the tool call.
-        
+
         Args:
             args: Tool arguments
             context: Execution context
-            
+
         Returns:
             Cache key string
         """
@@ -131,10 +129,10 @@ class Tool(ABC, BaseModel):
             context.agent_id,
         ]
         return ":".join(key_parts)
-    
+
     def get_metrics(self) -> Dict[str, Any]:
         """Get tool usage metrics.
-        
+
         Returns:
             Dictionary of metrics
         """
@@ -149,22 +147,20 @@ class Tool(ABC, BaseModel):
 
 class MCPTool(Tool):
     """Tool that wraps an MCP server endpoint."""
-    
+
     mcp_server_id: str
     mcp_tool_name: str
     mcp_endpoint: Optional[str] = None
-    
+
     async def execute(
-        self, 
-        args: Dict[str, Any], 
-        context: ToolExecutionContext
+        self, args: Dict[str, Any], context: ToolExecutionContext
     ) -> ToolResult:
         """Execute via MCP protocol.
-        
+
         Args:
             args: Tool arguments
             context: Execution context
-            
+
         Returns:
             ToolResult from MCP execution
         """
