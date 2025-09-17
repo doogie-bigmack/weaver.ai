@@ -10,12 +10,12 @@ from ..base import Tool, ToolCapability, ToolExecutionContext, ToolResult
 
 class WebSearchTool(Tool):
     """Tool for searching the web."""
-    
+
     name: str = "web_search"
     description: str = "Search the web for information"
     capabilities: list[ToolCapability] = [ToolCapability.WEB_SEARCH]
     required_scopes: list[str] = ["tool:web_search"]
-    
+
     input_schema: Dict[str, Any] = {
         "type": "object",
         "properties": {
@@ -31,7 +31,7 @@ class WebSearchTool(Tool):
         },
         "required": ["query"],
     }
-    
+
     output_schema: Dict[str, Any] = {
         "type": "object",
         "properties": {
@@ -50,27 +50,27 @@ class WebSearchTool(Tool):
             "total_results": {"type": "integer"},
         },
     }
-    
+
     async def execute(
         self,
         args: Dict[str, Any],
         context: ToolExecutionContext,
     ) -> ToolResult:
         """Execute web search.
-        
+
         Args:
             args: Search arguments (query, max_results)
             context: Execution context
-            
+
         Returns:
             ToolResult with search results
         """
         start_time = time.time()
-        
+
         try:
             query = args.get("query", "")
             max_results = args.get("max_results", 5)
-            
+
             if not query:
                 return ToolResult(
                     success=False,
@@ -80,7 +80,7 @@ class WebSearchTool(Tool):
                     tool_name=self.name,
                     tool_version=self.version,
                 )
-            
+
             # For now, return mock results
             # In production, this would call a real search API
             results = [
@@ -91,7 +91,7 @@ class WebSearchTool(Tool):
                 }
                 for i in range(min(max_results, 3))
             ]
-            
+
             return ToolResult(
                 success=True,
                 data={
@@ -104,7 +104,7 @@ class WebSearchTool(Tool):
                 tool_version=self.version,
                 metadata={"agent_id": context.agent_id},
             )
-            
+
         except Exception as e:
             return ToolResult(
                 success=False,

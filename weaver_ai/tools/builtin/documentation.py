@@ -10,7 +10,7 @@ from ..base import Tool, ToolCapability, ToolExecutionContext, ToolResult
 
 class DocumentationTool(Tool):
     """Tool for accessing documentation from various sources."""
-    
+
     name: str = "documentation"
     description: str = "Access library and API documentation"
     capabilities: list[ToolCapability] = [
@@ -18,7 +18,7 @@ class DocumentationTool(Tool):
         ToolCapability.ANALYSIS,
     ]
     required_scopes: list[str] = ["tool:documentation"]
-    
+
     input_schema: Dict[str, Any] = {
         "type": "object",
         "properties": {
@@ -37,7 +37,7 @@ class DocumentationTool(Tool):
         },
         "required": ["library"],
     }
-    
+
     output_schema: Dict[str, Any] = {
         "type": "object",
         "properties": {
@@ -53,28 +53,28 @@ class DocumentationTool(Tool):
             },
         },
     }
-    
+
     async def execute(
         self,
         args: Dict[str, Any],
         context: ToolExecutionContext,
     ) -> ToolResult:
         """Execute documentation search.
-        
+
         Args:
             args: Documentation search arguments
             context: Execution context
-            
+
         Returns:
             ToolResult with documentation content
         """
         start_time = time.time()
-        
+
         try:
             library = args.get("library", "")
             topic = args.get("topic", "")
             version = args.get("version", "")
-            
+
             if not library:
                 return ToolResult(
                     success=False,
@@ -84,7 +84,7 @@ class DocumentationTool(Tool):
                     tool_name=self.name,
                     tool_version=self.version,
                 )
-            
+
             # This could integrate with context7 MCP server for real documentation
             # For now, return mock documentation
             content = f"""
@@ -114,20 +114,24 @@ import {library.lower().replace(' ', '_')}
 - Feature 2: Description
 - Feature 3: Description
 """
-            
+
             examples = [
                 f"# Example 1: Basic {library} usage",
                 f"# Example 2: Advanced {library} patterns",
-                f"# Example 3: {library} with {topic}" if topic else f"# Example 3: {library} best practices",
+                (
+                    f"# Example 3: {library} with {topic}"
+                    if topic
+                    else f"# Example 3: {library} best practices"
+                ),
             ]
-            
+
             related_topics = [
                 "Installation Guide",
                 "API Reference",
                 "Best Practices",
                 "Troubleshooting",
             ]
-            
+
             return ToolResult(
                 success=True,
                 data={
@@ -144,7 +148,7 @@ import {library.lower().replace(' ', '_')}
                     "version_requested": version,
                 },
             )
-            
+
         except Exception as e:
             return ToolResult(
                 success=False,
