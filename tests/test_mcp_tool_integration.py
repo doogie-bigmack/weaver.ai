@@ -6,6 +6,7 @@ import asyncio
 
 import pytest
 import pytest_asyncio
+from pydantic import BaseModel
 
 from weaver_ai.agents.base import BaseAgent, Result
 from weaver_ai.agents.tool_manager import AgentToolManager, ToolExecutionPlan
@@ -13,6 +14,12 @@ from weaver_ai.events import Event
 from weaver_ai.tools import ToolRegistry
 from weaver_ai.tools.base import Tool, ToolExecutionContext, ToolResult
 from weaver_ai.tools.builtin import DocumentationTool, WebSearchTool
+
+
+class TaskData(BaseModel):
+    """Task data for events."""
+
+    task: str
 
 
 class ResearchAgent(BaseAgent):
@@ -23,8 +30,13 @@ class ResearchAgent(BaseAgent):
 
     async def process(self, event: Event) -> Result:
         """Process research tasks using tools."""
-        data = event.data if isinstance(event.data, dict) else {"task": str(event.data)}
-        task = data.get("task", "")
+        # Extract task from event data
+        if isinstance(event.data, dict):
+            task = event.data.get("task", "")
+        elif hasattr(event.data, "task"):
+            task = event.data.task
+        else:
+            task = str(event.data)
 
         if not task:
             return Result(success=False, error="No task provided")
@@ -45,14 +57,14 @@ class ResearchAgent(BaseAgent):
                 result = await tool_manager.execute_single(
                     "web_search",
                     {"query": task, "max_results": 3},
-                    {"workflow_id": event.metadata.get("workflow_id")},
+                    {"workflow_id": getattr(event.metadata, "correlation_id", None)},
                 )
 
                 return Result(
                     success=result.success,
                     data=result.data,
                     error=result.error,
-                    workflow_id=event.metadata.get("workflow_id"),
+                    workflow_id=getattr(event.metadata, "correlation_id", None),
                 )
 
             elif "documentation" in task.lower() and "documentation" in selected_tools:
@@ -66,21 +78,21 @@ class ResearchAgent(BaseAgent):
                 result = await tool_manager.execute_single(
                     "documentation",
                     {"library": library, "topic": "getting started"},
-                    {"workflow_id": event.metadata.get("workflow_id")},
+                    {"workflow_id": getattr(event.metadata, "correlation_id", None)},
                 )
 
                 return Result(
                     success=result.success,
                     data=result.data,
                     error=result.error,
-                    workflow_id=event.metadata.get("workflow_id"),
+                    workflow_id=getattr(event.metadata, "correlation_id", None),
                 )
 
         # Fallback to basic processing
         return Result(
             success=True,
             data={"message": f"Processed task: {task}", "tools_used": []},
-            workflow_id=event.metadata.get("workflow_id"),
+            workflow_id=getattr(event.metadata, "correlation_id", None),
         )
 
 
@@ -138,10 +150,9 @@ async def test_agent_tool_discovery(tool_registry):
 async def test_agent_web_search_tool(research_agent):
     """Test agent using web search tool."""
     event = Event(
-        event_type="task",
-        data={"task": "search for Python async programming tutorials"},
-        metadata={"workflow_id": "test-123"},
+        data=TaskData(task="search for Python async programming tutorials"),
     )
+    event.metadata.correlation_id = "test-123"
 
     result = await research_agent.process(event)
 
@@ -156,10 +167,9 @@ async def test_agent_web_search_tool(research_agent):
 async def test_agent_documentation_tool(research_agent):
     """Test agent using documentation tool."""
     event = Event(
-        event_type="task",
-        data={"task": "get documentation for FastAPI"},
-        metadata={"workflow_id": "test-456"},
+        data=TaskData(task="get documentation for FastAPI"),
     )
+    event.metadata.correlation_id = "test-456"
 
     result = await research_agent.process(event)
 
