@@ -6,6 +6,7 @@ import statistics
 import time
 
 import httpx
+import pytest
 
 
 async def make_request(client: httpx.AsyncClient, query: str) -> tuple[float, bool]:
@@ -20,6 +21,7 @@ async def make_request(client: httpx.AsyncClient, query: str) -> tuple[float, bo
     return latency_ms, cached
 
 
+@pytest.mark.asyncio
 async def test_cache_warmup():
     """Test cache warmup behavior."""
     print("\n=== Cache Warmup Test ===")
@@ -50,6 +52,7 @@ async def test_cache_warmup():
             )
 
 
+@pytest.mark.asyncio
 async def test_cache_hit_rate():
     """Test cache hit rate with repeated queries."""
     print("\n=== Cache Hit Rate Test ===")
@@ -113,6 +116,7 @@ async def test_cache_hit_rate():
         print(f"\nCache speedup: {speedup:.1f}x faster")
 
 
+@pytest.mark.asyncio
 async def test_concurrent_cache():
     """Test cache performance under concurrent load."""
     print("\n=== Concurrent Cache Test ===")

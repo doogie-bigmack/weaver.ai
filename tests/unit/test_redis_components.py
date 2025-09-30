@@ -14,8 +14,8 @@ from weaver_ai.redis.queue import Task
 from weaver_ai.redis.registry import AgentInfo
 
 
-class TestData(BaseModel):
-    """Test data model."""
+class _TestData(BaseModel):
+    """Test data model for testing purposes."""
 
     message: str
     value: int
@@ -62,7 +62,7 @@ class TestRedisEventMesh:
     @pytest.mark.asyncio
     async def test_publish_event(self, mesh, mock_redis):
         """Test publishing event to Redis."""
-        data = TestData(message="test", value=42)
+        data = _TestData(message="test", value=42)
 
         event_id = await mesh.publish(
             channel="test:channel",
@@ -82,7 +82,7 @@ class TestRedisEventMesh:
     @pytest.mark.asyncio
     async def test_publish_with_ttl(self, mesh, mock_redis):
         """Test publishing with TTL stores in Redis."""
-        data = TestData(message="test", value=42)
+        data = _TestData(message="test", value=42)
 
         await mesh.publish(
             channel="test:channel",
@@ -102,7 +102,7 @@ class TestRedisEventMesh:
     @pytest.mark.asyncio
     async def test_publish_task(self, mesh, mock_redis):
         """Test publishing task to queue."""
-        task_data = TestData(message="task", value=100)
+        task_data = _TestData(message="task", value=100)
 
         task_id = await mesh.publish_task(
             capability="process:data",

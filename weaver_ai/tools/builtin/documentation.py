@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import time
-from typing import Any, Dict
+from typing import Any
 
 from ..base import Tool, ToolCapability, ToolExecutionContext, ToolResult
 
@@ -19,7 +19,7 @@ class DocumentationTool(Tool):
     ]
     required_scopes: list[str] = ["tool:documentation"]
 
-    input_schema: Dict[str, Any] = {
+    input_schema: dict[str, Any] = {
         "type": "object",
         "properties": {
             "library": {
@@ -38,7 +38,7 @@ class DocumentationTool(Tool):
         "required": ["library"],
     }
 
-    output_schema: Dict[str, Any] = {
+    output_schema: dict[str, Any] = {
         "type": "object",
         "properties": {
             "library": {"type": "string"},
@@ -56,7 +56,7 @@ class DocumentationTool(Tool):
 
     async def execute(
         self,
-        args: Dict[str, Any],
+        args: dict[str, Any],
         context: ToolExecutionContext,
     ) -> ToolResult:
         """Execute documentation search.

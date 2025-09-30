@@ -3,16 +3,15 @@
 from __future__ import annotations
 
 import asyncio
+
 import pytest
-from unittest.mock import Mock, AsyncMock, patch
 
 from weaver_ai.agents.base import BaseAgent, Result
 from weaver_ai.agents.tool_manager import AgentToolManager, ToolExecutionPlan
 from weaver_ai.events import Event
-from weaver_ai.mcp import MCPClient, MCPServer
-from weaver_ai.tools import ToolRegistry, global_tool_registry
-from weaver_ai.tools.base import Tool, ToolCapability, ToolExecutionContext, ToolResult
-from weaver_ai.tools.builtin import WebSearchTool, DocumentationTool
+from weaver_ai.tools import ToolRegistry
+from weaver_ai.tools.base import Tool, ToolExecutionContext, ToolResult
+from weaver_ai.tools.builtin import DocumentationTool, WebSearchTool
 
 
 class ResearchAgent(BaseAgent):

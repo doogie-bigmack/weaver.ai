@@ -14,8 +14,8 @@ from weaver_ai.events import Event
 from weaver_ai.memory import MemoryStrategy
 
 
-class TestData(BaseModel):
-    """Test data model."""
+class _TestData(BaseModel):
+    """Test data model for testing purposes."""
 
     value: str
     number: int
@@ -63,7 +63,7 @@ class TestBaseAgent:
     async def test_can_process(self, base_agent):
         """Test capability matching."""
         event = Event(
-            data=TestData(value="test", number=42),
+            data=_TestData(value="test", number=42),
         )
 
         # Should match "test:data" capability
@@ -83,7 +83,7 @@ class TestBaseAgent:
     async def test_process_not_implemented(self, base_agent):
         """Test that process raises NotImplementedError."""
         event = Event(
-            data=TestData(value="test", number=42),
+            data=_TestData(value="test", number=42),
         )
 
         with pytest.raises(NotImplementedError):

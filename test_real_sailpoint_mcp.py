@@ -16,13 +16,12 @@ from pathlib import Path
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from weaver_ai.agents.base import BaseAgent
+from weaver_ai.agents.base import BaseAgent, Result
+from weaver_ai.events.models import Event, EventMetadata, EventType
 from weaver_ai.models.config import setup_router_from_config
-from weaver_ai.tools.registry import ToolRegistry
-from weaver_ai.tools.builtin.sailpoint import SailPointIIQTool
-from weaver_ai.models.events import Event, EventType, EventMetadata
-from weaver_ai.models.messages import Result
 from weaver_ai.tools.base import ToolCapability
+from weaver_ai.tools.builtin.sailpoint import SailPointIIQTool
+from weaver_ai.tools.registry import ToolRegistry
 
 
 class LiveSailPointAgent(BaseAgent):
@@ -94,7 +93,8 @@ class LiveSailPointAgent(BaseAgent):
                                 context += "  [MOCK DATA - MCP server not available]\n"
                         context += f"  {op_result.data}\n\n"
                 else:
-                    context += f"{op_name}: Failed - {op_result.error if op_result else 'Unknown error'}\n\n"
+                    error_msg = op_result.error if op_result else "Unknown error"
+                    context += f"{op_name}: Failed - {error_msg}\n\n"
             
             prompt = f"""You are analyzing real-time SailPoint IdentityIQ data.
 
@@ -256,7 +256,7 @@ async def main():
             result = await agent.process(event)
             
             if result.success:
-                print(f"\n[Result] Success!")
+                print("\n[Result] Success!")
                 
                 # Display results
                 if isinstance(result.data, dict):
@@ -276,7 +276,7 @@ async def main():
                     for op in ops:
                         print(f"\n  Operation: {op['operation']}")
                         if op['success']:
-                            print(f"    Status: ✓ Success")
+                            print("    Status: ✓ Success")
                             if op['data']:
                                 # Show sample data
                                 data = op['data']
@@ -289,12 +289,12 @@ async def main():
                                 if 'bundles' in data:
                                     print(f"    Bundles Retrieved: {len(data['bundles'])}")
                         else:
-                            print(f"    Status: ✗ Failed")
+                            print("    Status: ✗ Failed")
                             print(f"    Error: {op.get('error', 'Unknown')}")
                     
                     # Show LLM analysis if available
                     if 'analysis' in result.data:
-                        print(f"\n  GPT Analysis:")
+                        print("\n  GPT Analysis:")
                         print("  " + "-"*30)
                         for line in result.data['analysis'].split('\n'):
                             if line.strip():

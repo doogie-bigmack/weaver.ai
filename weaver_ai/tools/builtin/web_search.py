@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import time
-from typing import Any, Dict
+from typing import Any
 
 from ..base import Tool, ToolCapability, ToolExecutionContext, ToolResult
 
@@ -16,7 +16,7 @@ class WebSearchTool(Tool):
     capabilities: list[ToolCapability] = [ToolCapability.WEB_SEARCH]
     required_scopes: list[str] = ["tool:web_search"]
 
-    input_schema: Dict[str, Any] = {
+    input_schema: dict[str, Any] = {
         "type": "object",
         "properties": {
             "query": {
@@ -32,7 +32,7 @@ class WebSearchTool(Tool):
         "required": ["query"],
     }
 
-    output_schema: Dict[str, Any] = {
+    output_schema: dict[str, Any] = {
         "type": "object",
         "properties": {
             "results": {
@@ -53,7 +53,7 @@ class WebSearchTool(Tool):
 
     async def execute(
         self,
-        args: Dict[str, Any],
+        args: dict[str, Any],
         context: ToolExecutionContext,
     ) -> ToolResult:
         """Execute web search.

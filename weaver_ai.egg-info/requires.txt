@@ -8,6 +8,11 @@ opentelemetry-sdk>=1.26
 pyjwt>=2.9
 pyyaml>=6
 redis>=5.0
+openai>=1.0
+anthropic>=0.25
+groq>=0.4
+python-dotenv>=1.0
+mcp>=0.9.0
 
 [dev]
 pytest>=8
@@ -20,3 +25,12 @@ black>=24
 pre-commit>=3.7
 pip-audit>=2.7
 cyclonedx-bom>=4
+fakeredis>=2.20
+types-redis>=4.6
+types-PyYAML>=6.0
+
+[load-test]
+locust>=2.17.0
+pandas>=2.0.0
+matplotlib>=3.7.0
+seaborn>=0.12.0

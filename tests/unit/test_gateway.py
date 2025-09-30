@@ -4,13 +4,13 @@ from __future__ import annotations
 
 from fastapi import FastAPI
 
-from .agent import AgentOrchestrator
-from .mcp import MCPClient
-from .models import Citation, QueryRequest, QueryResponse
-from .pooled_stub import PooledStubModel
-from .settings import AppSettings
-from .tools import create_python_eval_server
-from .verifier import Verifier
+from weaver_ai.agent import AgentOrchestrator
+from weaver_ai.mcp import MCPClient
+from weaver_ai.models.api import Citation, QueryRequest, QueryResponse
+from weaver_ai.pooled_stub import PooledStubModel
+from weaver_ai.settings import AppSettings
+from weaver_ai.tools import create_python_eval_server
+from weaver_ai.verifier import Verifier
 
 app = FastAPI()
 _settings = AppSettings()
