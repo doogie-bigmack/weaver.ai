@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import json
 import time
-from typing import Any, Dict, Optional
+from typing import Any
+
 import httpx
 
 from ..base import Tool, ToolCapability, ToolExecutionContext, ToolResult
@@ -26,7 +27,7 @@ class SailPointIIQTool(Tool):
     mcp_server_port: int = 3000
     mcp_server_host: str = "localhost"
 
-    input_schema: Dict[str, Any] = {
+    input_schema: dict[str, Any] = {
         "type": "object",
         "properties": {
             "operation": {
@@ -48,7 +49,7 @@ class SailPointIIQTool(Tool):
         "required": ["operation"],
     }
 
-    output_schema: Dict[str, Any] = {
+    output_schema: dict[str, Any] = {
         "type": "object",
         "properties": {
             "success": {"type": "boolean"},
@@ -59,7 +60,7 @@ class SailPointIIQTool(Tool):
 
     async def execute(
         self,
-        args: Dict[str, Any],
+        args: dict[str, Any],
         context: ToolExecutionContext,
     ) -> ToolResult:
         """Execute SailPoint IIQ operation.
@@ -128,21 +129,23 @@ class SailPointIIQTool(Tool):
                 tool_version=self.version,
             )
 
-    async def _count_users_and_roles(self) -> Dict[str, Any]:
+    async def _count_users_and_roles(self) -> dict[str, Any]:
         """Count users and roles in SailPoint IIQ.
 
         Returns:
             Count of users and roles
         """
-        print(f"\n[SailPoint IIQ MCP Integration]")
+        print("\n[SailPoint IIQ MCP Integration]")
         print(
             f"  Connecting to MCP server at {self.mcp_server_host}:{self.mcp_server_port}"
         )
         print(f"  Target IIQ instance: {self.sailpoint_url}")
-        print(f"  Operation: Counting users and roles")
+        print("  Operation: Counting users and roles")
 
         # Make actual MCP request
-        mcp_url = f"http://{self.mcp_server_host}:{self.mcp_server_port}/mcp/v1/tools/call"
+        mcp_url = (
+            f"http://{self.mcp_server_host}:{self.mcp_server_port}/mcp/v1/tools/call"
+        )
         mcp_request = {
             "jsonrpc": "2.0",
             "method": "tools/call",
@@ -166,11 +169,11 @@ class SailPointIIQTool(Tool):
                     headers={"Content-Type": "application/json"},
                     timeout=30.0,
                 )
-                
+
                 if response.status_code == 200:
                     mcp_response = response.json()
                     print(f"  MCP Response: {json.dumps(mcp_response, indent=2)}")
-                    
+
                     # Extract result from MCP response
                     if "result" in mcp_response:
                         return {
@@ -180,17 +183,19 @@ class SailPointIIQTool(Tool):
                     elif "error" in mcp_response:
                         return {
                             "success": False,
-                            "error": mcp_response["error"].get("message", "Unknown MCP error"),
+                            "error": mcp_response["error"].get(
+                                "message", "Unknown MCP error"
+                            ),
                         }
                 else:
                     return {
                         "success": False,
                         "error": f"MCP server returned status {response.status_code}: {response.text}",
                     }
-                    
+
         except httpx.ConnectError:
             print(f"  ⚠️  Failed to connect to MCP server at {mcp_url}")
-            print(f"  ℹ️  Make sure the SailPoint MCP server is running")
+            print("  ℹ️  Make sure the SailPoint MCP server is running")
             # Fallback to mock data if server is not available
             mock_response = {
                 "users": {
@@ -215,7 +220,7 @@ class SailPointIIQTool(Tool):
                 "error": f"MCP request failed: {str(e)}",
             }
 
-    async def _list_users(self, query: Dict[str, Any]) -> Dict[str, Any]:
+    async def _list_users(self, query: dict[str, Any]) -> dict[str, Any]:
         """List users from SailPoint IIQ.
 
         Args:
@@ -231,7 +236,9 @@ class SailPointIIQTool(Tool):
         print(f"\n[SailPoint IIQ] Listing users (limit={limit}, offset={offset})")
 
         # Make actual MCP request
-        mcp_url = f"http://{self.mcp_server_host}:{self.mcp_server_port}/mcp/v1/tools/call"
+        mcp_url = (
+            f"http://{self.mcp_server_host}:{self.mcp_server_port}/mcp/v1/tools/call"
+        )
         mcp_request = {
             "jsonrpc": "2.0",
             "method": "tools/call",
@@ -255,7 +262,7 @@ class SailPointIIQTool(Tool):
                     headers={"Content-Type": "application/json"},
                     timeout=30.0,
                 )
-                
+
                 if response.status_code == 200:
                     mcp_response = response.json()
                     if "result" in mcp_response:
@@ -266,16 +273,18 @@ class SailPointIIQTool(Tool):
                     elif "error" in mcp_response:
                         return {
                             "success": False,
-                            "error": mcp_response["error"].get("message", "Unknown error"),
+                            "error": mcp_response["error"].get(
+                                "message", "Unknown error"
+                            ),
                         }
                 else:
                     return {
                         "success": False,
                         "error": f"MCP server returned status {response.status_code}",
                     }
-                    
+
         except httpx.ConnectError:
-            print(f"  ⚠️  MCP server not available, returning mock data")
+            print("  ⚠️  MCP server not available, returning mock data")
             # Fallback to mock data
             mock_users = [
                 {
@@ -303,7 +312,7 @@ class SailPointIIQTool(Tool):
                 "error": f"MCP request failed: {str(e)}",
             }
 
-    async def _list_roles(self, query: Dict[str, Any]) -> Dict[str, Any]:
+    async def _list_roles(self, query: dict[str, Any]) -> dict[str, Any]:
         """List roles from SailPoint IIQ.
 
         Args:
@@ -319,7 +328,9 @@ class SailPointIIQTool(Tool):
         print(f"\n[SailPoint IIQ] Listing roles (limit={limit}, offset={offset})")
 
         # Make actual MCP request
-        mcp_url = f"http://{self.mcp_server_host}:{self.mcp_server_port}/mcp/v1/tools/call"
+        mcp_url = (
+            f"http://{self.mcp_server_host}:{self.mcp_server_port}/mcp/v1/tools/call"
+        )
         mcp_request = {
             "jsonrpc": "2.0",
             "method": "tools/call",
@@ -343,7 +354,7 @@ class SailPointIIQTool(Tool):
                     headers={"Content-Type": "application/json"},
                     timeout=30.0,
                 )
-                
+
                 if response.status_code == 200:
                     mcp_response = response.json()
                     if "result" in mcp_response:
@@ -354,16 +365,18 @@ class SailPointIIQTool(Tool):
                     elif "error" in mcp_response:
                         return {
                             "success": False,
-                            "error": mcp_response["error"].get("message", "Unknown error"),
+                            "error": mcp_response["error"].get(
+                                "message", "Unknown error"
+                            ),
                         }
                 else:
                     return {
                         "success": False,
                         "error": f"MCP server returned status {response.status_code}",
                     }
-                    
+
         except httpx.ConnectError:
-            print(f"  ⚠️  MCP server not available, returning mock data")
+            print("  ⚠️  MCP server not available, returning mock data")
             # Fallback to mock data
             mock_roles = [
                 {
@@ -391,7 +404,7 @@ class SailPointIIQTool(Tool):
                 "error": f"MCP request failed: {str(e)}",
             }
 
-    async def _get_user(self, user_id: Optional[str]) -> Dict[str, Any]:
+    async def _get_user(self, user_id: str | None) -> dict[str, Any]:
         """Get specific user details.
 
         Args:
@@ -425,7 +438,7 @@ class SailPointIIQTool(Tool):
             },
         }
 
-    async def _get_role(self, role_id: Optional[str]) -> Dict[str, Any]:
+    async def _get_role(self, role_id: str | None) -> dict[str, Any]:
         """Get specific role details.
 
         Args:

@@ -14,6 +14,11 @@ Requires-Dist: opentelemetry-sdk>=1.26
 Requires-Dist: pyjwt>=2.9
 Requires-Dist: pyyaml>=6
 Requires-Dist: redis>=5.0
+Requires-Dist: openai>=1.0
+Requires-Dist: anthropic>=0.25
+Requires-Dist: groq>=0.4
+Requires-Dist: python-dotenv>=1.0
+Requires-Dist: mcp>=0.9.0
 Provides-Extra: dev
 Requires-Dist: pytest>=8; extra == "dev"
 Requires-Dist: pytest-asyncio>=0.23; extra == "dev"
@@ -25,4 +30,12 @@ Requires-Dist: black>=24; extra == "dev"
 Requires-Dist: pre-commit>=3.7; extra == "dev"
 Requires-Dist: pip-audit>=2.7; extra == "dev"
 Requires-Dist: cyclonedx-bom>=4; extra == "dev"
+Requires-Dist: fakeredis>=2.20; extra == "dev"
+Requires-Dist: types-redis>=4.6; extra == "dev"
+Requires-Dist: types-PyYAML>=6.0; extra == "dev"
+Provides-Extra: load-test
+Requires-Dist: locust>=2.17.0; extra == "load-test"
+Requires-Dist: pandas>=2.0.0; extra == "load-test"
+Requires-Dist: matplotlib>=3.7.0; extra == "load-test"
+Requires-Dist: seaborn>=0.12.0; extra == "load-test"
 Dynamic: license-file

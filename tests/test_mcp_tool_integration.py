@@ -3,16 +3,16 @@
 from __future__ import annotations
 
 import asyncio
+
 import pytest
-from unittest.mock import Mock, AsyncMock, patch
+import pytest_asyncio
 
 from weaver_ai.agents.base import BaseAgent, Result
 from weaver_ai.agents.tool_manager import AgentToolManager, ToolExecutionPlan
 from weaver_ai.events import Event
-from weaver_ai.mcp import MCPClient, MCPServer
-from weaver_ai.tools import ToolRegistry, global_tool_registry
-from weaver_ai.tools.base import Tool, ToolCapability, ToolExecutionContext, ToolResult
-from weaver_ai.tools.builtin import WebSearchTool, DocumentationTool
+from weaver_ai.tools import ToolRegistry
+from weaver_ai.tools.base import Tool, ToolExecutionContext, ToolResult
+from weaver_ai.tools.builtin import DocumentationTool, WebSearchTool
 
 
 class ResearchAgent(BaseAgent):
@@ -84,7 +84,7 @@ class ResearchAgent(BaseAgent):
         )
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def tool_registry():
     """Create a tool registry with test tools."""
     registry = ToolRegistry()
@@ -96,7 +96,7 @@ async def tool_registry():
     return registry
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def research_agent(tool_registry):
     """Create a research agent with tools."""
     agent = ResearchAgent()

@@ -6,7 +6,7 @@ import json
 from abc import ABC, abstractmethod
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -29,10 +29,10 @@ class ToolExecutionContext(BaseModel):
     """Context for tool execution."""
 
     agent_id: str
-    workflow_id: Optional[str] = None
+    workflow_id: str | None = None
     user_id: str
     request_id: str = Field(default_factory=lambda: datetime.now().isoformat())
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    metadata: dict[str, Any] = Field(default_factory=dict)
     timeout: float = 30.0  # seconds
     retry_count: int = 0
     max_retries: int = 3
@@ -43,9 +43,9 @@ class ToolResult(BaseModel):
 
     success: bool
     data: Any
-    error: Optional[str] = None
+    error: str | None = None
     execution_time: float  # seconds
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    metadata: dict[str, Any] = Field(default_factory=dict)
     cached: bool = False
     tool_name: str
     tool_version: str = "1.0.0"
@@ -61,14 +61,14 @@ class Tool(ABC, BaseModel):
     name: str
     description: str
     version: str = "1.0.0"
-    capabilities: List[ToolCapability] = Field(default_factory=list)
-    required_scopes: List[str] = Field(default_factory=list)
-    input_schema: Dict[str, Any] = Field(default_factory=dict)
-    output_schema: Dict[str, Any] = Field(default_factory=dict)
+    capabilities: list[ToolCapability] = Field(default_factory=list)
+    required_scopes: list[str] = Field(default_factory=list)
+    input_schema: dict[str, Any] = Field(default_factory=dict)
+    output_schema: dict[str, Any] = Field(default_factory=dict)
 
     # Runtime configuration
     enabled: bool = True
-    rate_limit: Optional[int] = None  # requests per minute
+    rate_limit: int | None = None  # requests per minute
     cost_per_call: float = 0.0  # for cost tracking
     requires_approval: bool = False
 
@@ -81,7 +81,7 @@ class Tool(ABC, BaseModel):
 
     @abstractmethod
     async def execute(
-        self, args: Dict[str, Any], context: ToolExecutionContext
+        self, args: dict[str, Any], context: ToolExecutionContext
     ) -> ToolResult:
         """Execute the tool with given arguments.
 
@@ -94,7 +94,7 @@ class Tool(ABC, BaseModel):
         """
         pass
 
-    def validate_args(self, args: Dict[str, Any]) -> bool:
+    def validate_args(self, args: dict[str, Any]) -> bool:
         """Validate input arguments against schema.
 
         Args:
@@ -111,7 +111,7 @@ class Tool(ABC, BaseModel):
                     raise ValueError(f"Missing required field: {field}")
         return True
 
-    def get_cache_key(self, args: Dict[str, Any], context: ToolExecutionContext) -> str:
+    def get_cache_key(self, args: dict[str, Any], context: ToolExecutionContext) -> str:
         """Generate cache key for the tool call.
 
         Args:
@@ -130,7 +130,7 @@ class Tool(ABC, BaseModel):
         ]
         return ":".join(key_parts)
 
-    def get_metrics(self) -> Dict[str, Any]:
+    def get_metrics(self) -> dict[str, Any]:
         """Get tool usage metrics.
 
         Returns:
@@ -150,10 +150,10 @@ class MCPTool(Tool):
 
     mcp_server_id: str
     mcp_tool_name: str
-    mcp_endpoint: Optional[str] = None
+    mcp_endpoint: str | None = None
 
     async def execute(
-        self, args: Dict[str, Any], context: ToolExecutionContext
+        self, args: dict[str, Any], context: ToolExecutionContext
     ) -> ToolResult:
         """Execute via MCP protocol.
 
