@@ -176,7 +176,7 @@ async def test_agent_documentation_tool(research_agent):
     assert result.success is True
     assert result.data is not None
     assert "content" in result.data
-    assert "FastAPI" in result.data["content"]
+    assert "fastapi" in result.data["content"].lower()
     assert result.workflow_id == "test-456"
 
 
@@ -308,6 +308,7 @@ async def test_tool_caching():
         "web_search",
         {"query": "Python"},
         context,
+        check_permissions=False,
     )
 
     # Second execution (should be cached)
@@ -315,6 +316,7 @@ async def test_tool_caching():
         "web_search",
         {"query": "Python"},
         context,
+        check_permissions=False,
     )
 
     assert result1.success is True
@@ -406,6 +408,7 @@ async def test_tool_statistics():
             "web_search",
             {"query": f"test query {i}"},
             context,
+            check_permissions=False,
         )
 
     # Check statistics

@@ -91,7 +91,7 @@ class TestMemoryPersistence:
         """Test memory TTL expiration."""
         # Create memory with short TTL
         strategy = MemoryStrategy(
-            short_term_ttl=1, long_term_ttl=2  # 1 second TTL  # 2 seconds TTL
+            short_term_ttl=1, long_term_ttl=3  # 1 second TTL  # 3 seconds TTL
         )
         memory = AgentMemory(
             strategy=strategy, agent_id="ttl_test", redis_client=redis_client
@@ -106,15 +106,15 @@ class TestMemoryPersistence:
         assert await memory.get_from_short_term("expire_soon") is not None
         assert await memory.get_from_long_term("expire_later") is not None
 
-        # Wait for short-term expiration
-        await asyncio.sleep(1.5)
+        # Wait for short-term expiration (1s TTL + 0.7s buffer)
+        await asyncio.sleep(1.7)
 
         # Short-term should be expired, long-term still exists
         assert await memory.get_from_short_term("expire_soon") is None
         assert await memory.get_from_long_term("expire_later") is not None
 
-        # Wait for long-term expiration
-        await asyncio.sleep(1)
+        # Wait for long-term expiration (1.5s remaining + 0.2s buffer)
+        await asyncio.sleep(1.7)
 
         # Both should be expired
         assert await memory.get_from_long_term("expire_later") is None

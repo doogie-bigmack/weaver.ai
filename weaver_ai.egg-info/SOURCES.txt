@@ -19,6 +19,7 @@ weaver_ai/__init__.py
 weaver_ai/a2a.py
 weaver_ai/agent.py
 weaver_ai/gateway.py
+weaver_ai/legacy_tools.py
 weaver_ai/main.py
 weaver_ai/mcp.py
 weaver_ai/model_router.py
@@ -26,7 +27,6 @@ weaver_ai/pooled_stub.py
 weaver_ai/reward.py
 weaver_ai/settings.py
 weaver_ai/telemetry.py
-weaver_ai/tools.py
 weaver_ai/verifier.py
 weaver_ai/workflow.py
 weaver_ai.egg-info/PKG-INFO
