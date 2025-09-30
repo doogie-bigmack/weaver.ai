@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 
 import pytest
+import pytest_asyncio
 
 from weaver_ai.agents.base import BaseAgent, Result
 from weaver_ai.agents.tool_manager import AgentToolManager, ToolExecutionPlan
@@ -83,7 +84,7 @@ class ResearchAgent(BaseAgent):
         )
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def tool_registry():
     """Create a tool registry with test tools."""
     registry = ToolRegistry()
@@ -95,7 +96,7 @@ async def tool_registry():
     return registry
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def research_agent(tool_registry):
     """Create a research agent with tools."""
     agent = ResearchAgent()

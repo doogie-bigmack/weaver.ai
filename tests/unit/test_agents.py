@@ -29,7 +29,7 @@ class TestBaseAgent:
         """Create a basic agent for testing."""
         agent = BaseAgent(
             agent_type="test",
-            capabilities=["test:data", "process:numbers"],
+            capabilities=["_test:data", "process:numbers"],
         )
         yield agent
 
@@ -66,7 +66,7 @@ class TestBaseAgent:
             data=_TestData(value="test", number=42),
         )
 
-        # Should match "test:data" capability
+        # Should match "_test:data" capability
         assert await base_agent.can_process(event)
 
         # Non-matching event
