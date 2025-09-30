@@ -319,8 +319,8 @@ async def test_tool_error_handling():
 
     # Register a tool that will fail
     class FailingTool(Tool):
-        name = "failing_tool"
-        description = "A tool that always fails"
+        name: str = "failing_tool"
+        description: str = "A tool that always fails"
 
         async def execute(self, args, context):
             raise ValueError("Tool execution failed")
@@ -349,8 +349,8 @@ async def test_tool_timeout():
 
     # Register a slow tool
     class SlowTool(Tool):
-        name = "slow_tool"
-        description = "A slow tool"
+        name: str = "slow_tool"
+        description: str = "A slow tool"
 
         async def execute(self, args, context):
             await asyncio.sleep(5)  # Sleep longer than timeout
