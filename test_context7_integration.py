@@ -2,15 +2,14 @@
 """Test integration with context7 MCP server for documentation."""
 
 import asyncio
-import json
-from typing import Any, Dict
+from typing import Any
 
 from weaver_ai.agents.base import BaseAgent, Result
 from weaver_ai.agents.tool_manager import AgentToolManager
 from weaver_ai.events import Event
 from weaver_ai.tools import ToolRegistry
 from weaver_ai.tools.base import Tool, ToolCapability, ToolExecutionContext, ToolResult
-from weaver_ai.tools.builtin import WebSearchTool, DocumentationTool
+from weaver_ai.tools.builtin import DocumentationTool, WebSearchTool
 
 
 class Context7DocumentationTool(Tool):
@@ -26,7 +25,7 @@ class Context7DocumentationTool(Tool):
     
     async def execute(
         self,
-        args: Dict[str, Any],
+        args: dict[str, Any],
         context: ToolExecutionContext,
     ) -> ToolResult:
         """Execute documentation search using context7.
@@ -295,13 +294,13 @@ async def test_real_context7_mcp():
         #     tokens=5000,
         #     topic="getting started"
         # )
-        print(f"  2. Fetching documentation...")
+        print("  2. Fetching documentation...")
         
         # Mock result for demonstration
-        print(f"  ✓ Documentation retrieved successfully")
+        print("  ✓ Documentation retrieved successfully")
         print(f"    - Library: {library}")
-        print(f"    - Tokens: 5000")
-        print(f"    - Topic: getting started")
+        print("    - Tokens: 5000")
+        print("    - Topic: getting started")
     
     print("\n=== Real MCP Test Complete ===\n")
 

@@ -9,13 +9,13 @@ Set your OpenAI API key as an environment variable before running:
 
 import asyncio
 import os
-from weaver_ai.agents.base import BaseAgent, Result
-from weaver_ai.events import Event, EventMetadata
-from weaver_ai.models.router import ModelRouter
+
+from pydantic import BaseModel
+
 from weaver_ai.models.openai_adapter import OpenAIAdapter
+from weaver_ai.models.router import ModelRouter
 from weaver_ai.tools import ToolRegistry
 from weaver_ai.tools.builtin.sailpoint import SailPointIIQTool
-from pydantic import BaseModel
 
 
 class Query(BaseModel):
@@ -38,7 +38,7 @@ async def main():
         else:
             return
     
-    print(f"✅ API key configured")
+    print("✅ API key configured")
     
     # Setup
     router = ModelRouter()

@@ -5,9 +5,9 @@ This connects to the HTTP server running on port 3000.
 """
 
 import asyncio
+from typing import Any
+
 import httpx
-import json
-from typing import Dict, Any, Optional
 
 
 class RealSailPointClient:
@@ -17,12 +17,12 @@ class RealSailPointClient:
         self.base_url = base_url
         self.client = httpx.AsyncClient(timeout=30.0)
     
-    async def health_check(self) -> Dict[str, Any]:
+    async def health_check(self) -> dict[str, Any]:
         """Check server health."""
         response = await self.client.get(f"{self.base_url}/health")
         return response.json()
     
-    async def list_identities(self, limit: int = 10, offset: int = 0) -> Dict[str, Any]:
+    async def list_identities(self, limit: int = 10, offset: int = 0) -> dict[str, Any]:
         """List identities from SailPoint."""
         params = {"limit": limit, "offset": offset}
         try:
@@ -57,7 +57,7 @@ class RealSailPointClient:
                 return len(result["Resources"])
             return -1
     
-    async def execute_tool(self, tool_name: str, args: Dict[str, Any]) -> Dict[str, Any]:
+    async def execute_tool(self, tool_name: str, args: dict[str, Any]) -> dict[str, Any]:
         """Execute a tool through the HTTP server."""
         try:
             response = await self.client.post(
@@ -131,7 +131,7 @@ async def main():
         if "error" in result:
             print(f"  Error: {result['error']}")
         else:
-            print(f"  Success: Tool executed")
+            print("  Success: Tool executed")
             if "totalResults" in result or "total" in result:
                 total = result.get('totalResults') or result.get('total', 'unknown')
                 print(f"  Total Identities Found: {total}")
@@ -142,7 +142,7 @@ async def main():
         if count > 0:
             print(f"  ✓ Total Identities in SailPoint: {count}")
         else:
-            print(f"  ⚠️  Could not determine total count")
+            print("  ⚠️  Could not determine total count")
         
     except Exception as e:
         print(f"\n❌ Error: {e}")
