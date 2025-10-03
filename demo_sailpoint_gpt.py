@@ -24,8 +24,8 @@ class Query(BaseModel):
 
 async def main():
     print("\n🚀 SailPoint + GPT Demo")
-    print("="*40)
-    
+    print("=" * 40)
+
     # Check API key
     api_key = os.getenv("OPENAI_API_KEY", "")
     if not api_key or api_key == "sk-proj-...":
@@ -37,38 +37,41 @@ async def main():
             os.environ["OPENAI_API_KEY"] = api_key
         else:
             return
-    
+
     print("✅ API key configured")
-    
+
     # Setup
     router = ModelRouter()
     router.register("gpt-4o-mini", OpenAIAdapter("gpt-4o-mini"))
-    
+
     # Quick test
     print("\n🧪 Testing GPT...")
-    result = await router.generate("Say 'Ready!' in 1 word", model="gpt-4o-mini", max_tokens=5)
+    result = await router.generate(
+        "Say 'Ready!' in 1 word", model="gpt-4o-mini", max_tokens=5
+    )
     print(f"   GPT: {result.text}")
-    
+
     if "unavailable" in result.model:
         print("   ❌ GPT not working - check API key")
         return
-    
+
     # Get SailPoint data
     print("\n📊 SailPoint Data (Mock):")
     tool = SailPointIIQTool()
     registry = ToolRegistry()
     await registry.register_tool(tool)
-    
+
     # Execute tool
     from weaver_ai.tools import ToolExecutionContext
+
     ctx = ToolExecutionContext(agent_id="demo", workflow_id="test")
     result = await tool.execute({"action": "count_users_and_roles"}, ctx)
-    
+
     if result.success:
         data = result.data
         print(f"   Users: {data['users']['total']} ({data['users']['active']} active)")
         print(f"   Roles: {data['roles']['total']}")
-        
+
         # Use GPT to analyze
         print("\n🤖 GPT Analysis:")
         prompt = f"In 2 sentences, analyze: {data['summary']}"

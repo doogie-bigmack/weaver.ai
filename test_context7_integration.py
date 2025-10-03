@@ -14,7 +14,7 @@ from weaver_ai.tools.builtin import DocumentationTool, WebSearchTool
 
 class Context7DocumentationTool(Tool):
     """Tool that integrates with context7 MCP server for real documentation."""
-    
+
     name: str = "context7_docs"
     description: str = "Access real library documentation via context7"
     capabilities: list[ToolCapability] = [
@@ -22,28 +22,29 @@ class Context7DocumentationTool(Tool):
         ToolCapability.ANALYSIS,
     ]
     required_scopes: list[str] = ["tool:documentation"]
-    
+
     async def execute(
         self,
         args: dict[str, Any],
         context: ToolExecutionContext,
     ) -> ToolResult:
         """Execute documentation search using context7.
-        
+
         Args:
             args: Documentation search arguments
             context: Execution context
-            
+
         Returns:
             ToolResult with documentation content
         """
         import time
+
         start_time = time.time()
-        
+
         try:
             library = args.get("library", "")
             topic = args.get("topic", "")
-            
+
             if not library:
                 return ToolResult(
                     success=False,
@@ -53,14 +54,14 @@ class Context7DocumentationTool(Tool):
                     tool_name=self.name,
                     tool_version=self.version,
                 )
-            
+
             # Note: In a real implementation, this would call the context7 MCP server
             # For demonstration, we'll show how it would work
             print(f"\n[Context7] Resolving library ID for: {library}")
-            
+
             # This would normally use mcp__context7__resolve-library-id
             # and mcp__context7__get-library-docs functions
-            
+
             # Mock response for demonstration
             mock_docs = f"""
 # {library} Documentation (via Context7)
@@ -93,7 +94,7 @@ import {library.lower().replace('-', '_')}
 - Community forums
 - Stack Overflow discussions
 """
-            
+
             return ToolResult(
                 success=True,
                 data={
@@ -110,7 +111,7 @@ import {library.lower().replace('-', '_')}
                     "mcp_server": "context7",
                 },
             )
-            
+
         except Exception as e:
             return ToolResult(
                 success=False,
@@ -124,10 +125,10 @@ import {library.lower().replace('-', '_')}
 
 class DocumentationAgent(BaseAgent):
     """Agent specialized in fetching and analyzing documentation."""
-    
+
     agent_type: str = "documentation"
     capabilities: list[str] = ["research", "analysis"]
-    
+
     async def process(self, event: Event) -> Result:
         """Process documentation requests."""
         if isinstance(event.data, dict):
@@ -136,10 +137,10 @@ class DocumentationAgent(BaseAgent):
             # Handle non-dict data
             data = {"task": event.data if isinstance(event.data, str) else ""}
         task = data.get("task", "")
-        
+
         if not task:
             return Result(success=False, data=None, error="No task provided")
-        
+
         # Extract library name from task
         libraries = ["fastapi", "django", "flask", "sqlalchemy", "pydantic", "pytest"]
         library = None
@@ -147,10 +148,10 @@ class DocumentationAgent(BaseAgent):
             if lib in task.lower():
                 library = lib
                 break
-        
+
         if not library:
             library = data.get("library", "python")
-        
+
         # Use tool manager to execute documentation tool
         if self.tool_registry:
             tool_manager = AgentToolManager(
@@ -158,7 +159,7 @@ class DocumentationAgent(BaseAgent):
                 tool_registry=self.tool_registry,
                 available_tools=self.available_tools,
             )
-            
+
             # Try context7 tool first, fallback to regular documentation
             if "context7_docs" in self.available_tools:
                 result = await tool_manager.execute_single(
@@ -179,14 +180,14 @@ class DocumentationAgent(BaseAgent):
                     error="No documentation tools available",
                     workflow_id=event.metadata.get("workflow_id"),
                 )
-            
+
             return Result(
                 success=result.success,
                 data=result.data,
                 error=result.error,
                 workflow_id=event.metadata.get("workflow_id"),
             )
-        
+
         return Result(
             success=False,
             data=None,
@@ -198,22 +199,22 @@ class DocumentationAgent(BaseAgent):
 async def test_context7_documentation():
     """Test documentation retrieval with context7 MCP server."""
     print("\n=== Testing Context7 Documentation Integration ===\n")
-    
+
     # Create tool registry
     registry = ToolRegistry()
-    
+
     # Register tools
     await registry.register_tool(Context7DocumentationTool())
     await registry.register_tool(DocumentationTool())
     await registry.register_tool(WebSearchTool())
-    
+
     # Create documentation agent
     agent = DocumentationAgent()
     await agent.initialize(
         redis_url="redis://localhost:6379",
         tool_registry=registry,
     )
-    
+
     # Test various documentation requests
     test_cases = [
         {
@@ -232,19 +233,19 @@ async def test_context7_documentation():
             "topic": "fixtures",
         },
     ]
-    
+
     for test_case in test_cases:
         print(f"\nTest: {test_case['task']}")
         print("-" * 50)
-        
+
         event = Event(
             event_type="documentation_request",
             data=test_case,
             metadata={"workflow_id": f"test-{test_case['library']}"},
         )
-        
+
         result = await agent.process(event)
-        
+
         if result.success:
             print(f"✓ Successfully retrieved documentation for {test_case['library']}")
             if result.data:
@@ -253,7 +254,7 @@ async def test_context7_documentation():
                 print(f"  Content preview: {result.data['content'][:200]}...")
         else:
             print(f"✗ Failed: {result.error}")
-    
+
     # Test tool statistics
     print("\n\n=== Tool Usage Statistics ===")
     stats = registry.get_stats()
@@ -263,31 +264,31 @@ async def test_context7_documentation():
             print(f"  Total calls: {tool_stats.get('total_calls', 0)}")
             print(f"  Successful: {tool_stats.get('successful_calls', 0)}")
             print(f"  Failed: {tool_stats.get('failed_calls', 0)}")
-            if tool_stats.get('average_execution_time'):
+            if tool_stats.get("average_execution_time"):
                 print(f"  Avg time: {tool_stats['average_execution_time']:.3f}s")
-    
+
     # Cleanup
     await agent.stop()
-    
+
     print("\n\n=== Test Complete ===\n")
 
 
 async def test_real_context7_mcp():
     """Test with real context7 MCP functions if available."""
     print("\n=== Testing Real Context7 MCP Server ===\n")
-    
+
     # This would use the actual mcp__context7 functions
     # For demonstration, we'll show the structure
-    
+
     test_libraries = ["fastapi", "django", "pytest", "sqlalchemy"]
-    
+
     for library in test_libraries:
         print(f"\nTesting documentation for: {library}")
-        
+
         # Step 1: Resolve library ID
         # This would call: mcp__context7__resolve-library-id(libraryName=library)
         print(f"  1. Resolving library ID for {library}...")
-        
+
         # Step 2: Get documentation
         # This would call: mcp__context7__get-library-docs(
         #     context7CompatibleLibraryID=resolved_id,
@@ -295,13 +296,13 @@ async def test_real_context7_mcp():
         #     topic="getting started"
         # )
         print("  2. Fetching documentation...")
-        
+
         # Mock result for demonstration
         print("  ✓ Documentation retrieved successfully")
         print(f"    - Library: {library}")
         print("    - Tokens: 5000")
         print("    - Topic: getting started")
-    
+
     print("\n=== Real MCP Test Complete ===\n")
 
 
@@ -309,39 +310,41 @@ async def main():
     """Run all tests."""
     # Test with mock context7
     await test_context7_documentation()
-    
+
     # Test structure for real context7
     await test_real_context7_mcp()
-    
+
     # Additional test: Tool execution plan
     print("\n=== Testing Tool Execution Plans ===\n")
-    
+
     registry = ToolRegistry()
     await registry.register_tool(WebSearchTool())
     await registry.register_tool(DocumentationTool())
     await registry.register_tool(Context7DocumentationTool())
-    
+
     manager = AgentToolManager(
         agent_id="test-agent",
         tool_registry=registry,
         available_tools=["web_search", "documentation", "context7_docs"],
     )
-    
+
     # Execute multiple tools in parallel
     print("Executing parallel documentation searches...")
-    results = await manager.execute_parallel([
-        ("web_search", {"query": "FastAPI best practices"}),
-        ("documentation", {"library": "fastapi"}),
-        ("context7_docs", {"library": "fastapi", "topic": "middleware"}),
-    ])
-    
+    results = await manager.execute_parallel(
+        [
+            ("web_search", {"query": "FastAPI best practices"}),
+            ("documentation", {"library": "fastapi"}),
+            ("context7_docs", {"library": "fastapi", "topic": "middleware"}),
+        ]
+    )
+
     for i, result in enumerate(results):
         print(f"\nTool {i+1} ({result.tool_name}):")
         print(f"  Success: {result.success}")
         print(f"  Execution time: {result.execution_time:.3f}s")
         if result.error:
             print(f"  Error: {result.error}")
-    
+
     print("\n=== All Tests Complete ===\n")
 
 
