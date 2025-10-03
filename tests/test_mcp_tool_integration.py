@@ -96,7 +96,7 @@ class ResearchAgent(BaseAgent):
         )
 
 
-@pytest_asyncio.fixture
+@pytest_asyncio.fixture(loop_scope="function")
 async def tool_registry():
     """Create a tool registry with test tools."""
     registry = ToolRegistry()
@@ -108,7 +108,7 @@ async def tool_registry():
     return registry
 
 
-@pytest_asyncio.fixture
+@pytest_asyncio.fixture(loop_scope="function")
 async def research_agent(tool_registry):
     """Create a research agent with tools."""
     agent = ResearchAgent()

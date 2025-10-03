@@ -60,7 +60,7 @@ class WorkQueue:
         # Use Redis sorted set for priority (lower score = higher priority)
         score = -task.priority if task.priority else datetime.now().timestamp()
 
-        await self.redis.zadd(queue_name, {task.json(): score})
+        await self.redis.zadd(queue_name, {task.model_dump_json(): score})
 
         # Publish notification for waiting agents
         await self.redis.publish(
@@ -132,7 +132,7 @@ class WorkQueue:
             result = await self.redis.zpopmin(queue, count=1)
             if result:
                 task_json, score = result[0]
-                return Task.parse_raw(task_json)
+                return Task.model_validate_json(task_json)
         return None
 
     async def requeue_task(
@@ -160,7 +160,7 @@ class WorkQueue:
             # Calculate score with delay
             score = datetime.now().timestamp() + delay_seconds
 
-            await self.redis.zadd(queue_name, {task.json(): score})
+            await self.redis.zadd(queue_name, {task.model_dump_json(): score})
 
     async def push_dead_letter(self, task: Task):
         """Push task to dead letter queue.
@@ -169,14 +169,14 @@ class WorkQueue:
             task: Failed task
         """
         await self.redis.zadd(
-            "queue:dead_letter", {task.json(): datetime.now().timestamp()}
+            "queue:dead_letter", {task.model_dump_json(): datetime.now().timestamp()}
         )
 
         # Also store failure info
         await self.redis.hset(
             f"failed_task:{task.task_id}",
             mapping={
-                "task": task.json(),
+                "task": task.model_dump_json(),
                 "failed_at": datetime.now(UTC).isoformat(),
                 "attempts": str(task.attempts),
             },
