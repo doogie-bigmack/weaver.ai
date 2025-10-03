@@ -140,7 +140,9 @@ class RedisAgentRegistry:
             results = await pipe.execute()
             return [r > 0 for r in results]
         except Exception as e:
-            logger.error(f"Redis pipeline failed checking heartbeats: {e}", exc_info=True)
+            logger.error(
+                f"Redis pipeline failed checking heartbeats: {e}", exc_info=True
+            )
             raise RedisPipelineError(f"Failed to check heartbeats: {e}") from e
 
     async def _get_agent_info_batch(self, agent_ids: list[str]) -> list[AgentInfo]:
@@ -162,7 +164,9 @@ class RedisAgentRegistry:
         try:
             agent_jsons = await pipe.execute()
         except Exception as e:
-            logger.error(f"Redis pipeline failed retrieving agent info: {e}", exc_info=True)
+            logger.error(
+                f"Redis pipeline failed retrieving agent info: {e}", exc_info=True
+            )
             raise RedisPipelineError(f"Failed to retrieve agent info: {e}") from e
 
         agents = []
@@ -205,7 +209,9 @@ class RedisAgentRegistry:
             await self.redis.sadd(f"capability:{sanitized}", agent_info.agent_id)
 
         # Index by type
-        await self.redis.sadd(f"agent_type:{agent_info.agent_type}", agent_info.agent_id)
+        await self.redis.sadd(
+            f"agent_type:{agent_info.agent_type}", agent_info.agent_id
+        )
 
         # Set initial heartbeat
         await self.heartbeat(agent_info.agent_id)
@@ -336,9 +342,7 @@ class RedisAgentRegistry:
             logger.error(
                 f"Redis pipeline failed in find_capable_agents: {e}", exc_info=True
             )
-            raise RedisPipelineError(
-                f"Failed to find capable agents: {e}"
-            ) from e
+            raise RedisPipelineError(f"Failed to find capable agents: {e}") from e
 
         if require_all:
             # Intersection - agents with all capabilities
