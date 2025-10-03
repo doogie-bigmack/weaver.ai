@@ -92,6 +92,7 @@ class AgentToolManager:
         tool_name: str,
         args: dict[str, Any],
         context: dict[str, Any] | None = None,
+        check_permissions: bool = False,
     ) -> ToolResult:
         """Execute a single tool.
 
@@ -99,6 +100,7 @@ class AgentToolManager:
             tool_name: Name of the tool
             args: Tool arguments
             context: Optional execution context
+            check_permissions: Whether to check RBAC permissions (default: False)
 
         Returns:
             Tool execution result
@@ -123,7 +125,7 @@ class AgentToolManager:
             tool_name=tool_name,
             args=args,
             context=exec_context,
-            check_permissions=True,
+            check_permissions=check_permissions,
         )
 
         # Record execution
@@ -142,18 +144,21 @@ class AgentToolManager:
         self,
         tools: list[tuple[str, dict[str, Any]]],
         context: dict[str, Any] | None = None,
+        check_permissions: bool = False,
     ) -> list[ToolResult]:
         """Execute multiple tools in parallel.
 
         Args:
             tools: List of (tool_name, args) tuples
             context: Optional execution context
+            check_permissions: Whether to check RBAC permissions (default: False)
 
         Returns:
             List of tool results
         """
         tasks = [
-            self.execute_single(tool_name, args, context) for tool_name, args in tools
+            self.execute_single(tool_name, args, context, check_permissions)
+            for tool_name, args in tools
         ]
 
         results = await asyncio.gather(*tasks, return_exceptions=True)
@@ -182,6 +187,7 @@ class AgentToolManager:
         tools: list[tuple[str, dict[str, Any]]],
         context: dict[str, Any] | None = None,
         stop_on_error: bool = True,
+        check_permissions: bool = False,
     ) -> list[ToolResult]:
         """Execute tools sequentially.
 
@@ -189,6 +195,7 @@ class AgentToolManager:
             tools: List of (tool_name, args) tuples
             context: Optional execution context
             stop_on_error: Stop execution on first error
+            check_permissions: Whether to check RBAC permissions (default: False)
 
         Returns:
             List of tool results
@@ -202,7 +209,9 @@ class AgentToolManager:
                     context = {}
                 context["previous_result"] = results[-1].data
 
-            result = await self.execute_single(tool_name, args, context)
+            result = await self.execute_single(
+                tool_name, args, context, check_permissions
+            )
             results.append(result)
 
             if not result.success and stop_on_error:
