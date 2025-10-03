@@ -52,11 +52,11 @@ class RedisEventMesh:
 
             # Close pubsub
             if self.pubsub:
-                await self.pubsub.close()
+                await self.pubsub.aclose()
 
             # Close Redis connection
             if self.redis:
-                await self.redis.close()
+                await self.redis.aclose()
 
             self._connected = False
 
@@ -102,14 +102,14 @@ class RedisEventMesh:
         )
 
         # Publish to Redis
-        await self.redis.publish(channel, event.json())
+        await self.redis.publish(channel, event.model_dump_json())
 
         # Optional: Store in Redis with TTL for late subscribers
         if ttl:
             await self.redis.setex(
                 f"event:{event.metadata.event_id}",
                 ttl,
-                event.json(),
+                event.model_dump_json(),
             )
 
         return event.metadata.event_id
@@ -171,7 +171,7 @@ class RedisEventMesh:
                         # Parse event
                         event_data = message["data"]
                         if isinstance(event_data, str):
-                            event = Event.parse_raw(event_data)
+                            event = Event.model_validate_json(event_data)
 
                             # Call handler
                             if asyncio.iscoroutinefunction(handler):
@@ -238,7 +238,7 @@ class RedisEventMesh:
             "capability": capability,
             "priority": priority,
             "workflow_id": workflow_id,
-            "data": task.dict(),
+            "data": task.model_dump(),
             "timestamp": datetime.now(UTC).isoformat(),
         }
 

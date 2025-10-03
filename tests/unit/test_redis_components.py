@@ -184,7 +184,7 @@ class TestWorkQueue:
             capability="analyze:data",
             data={"test": "data"},
         )
-        mock_redis.zpopmin.return_value = [(task.json(), 1.0)]
+        mock_redis.zpopmin.return_value = [(task.model_dump_json(), 1.0)]
 
         popped = await queue.pop_task(["queue:analyze_data"], block=False)
 
@@ -210,7 +210,7 @@ class TestWorkQueue:
         # Task attempts should increment
         zadd_args = mock_redis.zadd.call_args
         task_json = list(zadd_args[0][1].keys())[0]
-        requeued_task = Task.parse_raw(task_json)
+        requeued_task = Task.model_validate_json(task_json)
         assert requeued_task.attempts == 2
 
     @pytest.mark.asyncio

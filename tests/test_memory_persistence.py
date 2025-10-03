@@ -15,14 +15,14 @@ from weaver_ai.memory import AgentMemory, MemoryStrategy
 class TestMemoryPersistence:
     """Test memory persistence with Redis."""
 
-    @pytest_asyncio.fixture
+    @pytest_asyncio.fixture(loop_scope="function")
     async def redis_client(self):
         """Create a fake Redis client for testing."""
         client = FakeAsyncRedis(decode_responses=True)
         yield client
         await client.aclose()
 
-    @pytest_asyncio.fixture
+    @pytest_asyncio.fixture(loop_scope="function")
     async def memory(self, redis_client):
         """Create an agent memory instance."""
         strategy = MemoryStrategy(
