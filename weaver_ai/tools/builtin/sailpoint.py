@@ -188,10 +188,11 @@ class SailPointIIQTool(Tool):
                             ),
                         }
                 else:
-                    return {
-                        "success": False,
-                        "error": f"MCP server returned status {response.status_code}: {response.text}",
-                    }
+                    error_msg = (
+                        f"MCP server returned status {response.status_code}: "
+                        f"{response.text}"
+                    )
+                    return {"success": False, "error": error_msg}
 
         except httpx.ConnectError:
             print(f"  ⚠️  Failed to connect to MCP server at {mcp_url}")
@@ -208,7 +209,10 @@ class SailPointIIQTool(Tool):
                     "business_roles": 45,
                     "it_roles": 40,
                 },
-                "summary": "[MOCK DATA - MCP server not available] SailPoint IIQ instance has 1250 users and 85 roles configured",
+                "summary": (
+                    "[MOCK DATA - MCP server not available] SailPoint IIQ instance "
+                    "has 1250 users and 85 roles configured"
+                ),
             }
             return {
                 "success": True,

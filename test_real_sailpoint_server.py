@@ -116,12 +116,16 @@ async def main():
                 # SCIM format
                 print(f"  Total Identities: {identities.get('totalResults', 'unknown')}")
                 for idx, identity in enumerate(identities.get('Resources', [])[:5], 1):
-                    print(f"  {idx}. {identity.get('userName', 'unknown')} - {identity.get('displayName', 'unknown')}")
+                    username = identity.get('userName', 'unknown')
+                    display = identity.get('displayName', 'unknown')
+                    print(f"  {idx}. {username} - {display}")
             elif "identities" in identities:
                 # Direct format
                 print(f"  Total: {identities.get('total', len(identities['identities']))}")
                 for idx, identity in enumerate(identities['identities'][:5], 1):
-                    print(f"  {idx}. {identity.get('name', 'unknown')} - {identity.get('displayName', 'unknown')}")
+                    name = identity.get('name', 'unknown')
+                    display = identity.get('displayName', 'unknown')
+                    print(f"  {idx}. {name} - {display}")
             else:
                 print(f"  Response format: {list(identities.keys())}")
         
