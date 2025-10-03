@@ -152,11 +152,20 @@ class RedisAgentRegistry:
         if not capabilities:
             return []
 
-        agent_sets = []
+        # Batch fetch all capability sets
+        pipe = self.redis.pipeline()
         for capability in capabilities:
             key = f"capability:{capability.replace(':', '_')}"
-            agents = await self.redis.smembers(key)
-            agent_sets.append(agents)
+            pipe.smembers(key)
+
+        try:
+            agent_sets = await pipe.execute()
+        except Exception as e:
+            # Log error and return empty list on Redis failure
+            import logging
+
+            logging.error(f"Redis pipeline failed in find_capable_agents: {e}")
+            return []
 
         if require_all:
             # Intersection - agents with all capabilities
@@ -171,9 +180,22 @@ class RedisAgentRegistry:
 
         # Filter to online agents if requested
         if only_online:
-            online = []
+            # Batch check heartbeats
+            pipe = self.redis.pipeline()
             for agent_id in result:
-                if await self.is_online(agent_id):
+                pipe.exists(f"heartbeat:{agent_id}")
+
+            try:
+                heartbeat_results = await pipe.execute()
+            except Exception as e:
+                import logging
+
+                logging.error(f"Redis pipeline failed checking heartbeats: {e}")
+                return []
+
+            online = []
+            for agent_id, exists in zip(result, heartbeat_results, strict=True):
+                if exists > 0:
                     online.append(agent_id)
             return online
 
@@ -224,15 +246,50 @@ class RedisAgentRegistry:
         else:
             # Get all agents
             agents_dict = await self.redis.hgetall("agents")
-            agent_ids = agents_dict.keys()
+            agent_ids = list(agents_dict.keys())
 
+        # Use pipeline to batch operations
+        pipe = self.redis.pipeline()
+
+        # Batch heartbeat checks if needed
+        if only_online:
+            for agent_id in agent_ids:
+                pipe.exists(f"heartbeat:{agent_id}")
+
+            try:
+                heartbeat_results = await pipe.execute()
+            except Exception as e:
+                import logging
+
+                logging.error(f"Redis pipeline failed in list_agents (heartbeats): {e}")
+                return []
+
+            pipe = self.redis.pipeline()
+
+        # Batch agent info retrieval
+        online_agent_ids = []
+        for idx, agent_id in enumerate(agent_ids):
+            if only_online:
+                if heartbeat_results[idx] > 0:
+                    online_agent_ids.append(agent_id)
+                    pipe.hget("agents", agent_id)
+            else:
+                online_agent_ids.append(agent_id)
+                pipe.hget("agents", agent_id)
+
+        try:
+            agent_jsons = await pipe.execute()
+        except Exception as e:
+            import logging
+
+            logging.error(f"Redis pipeline failed in list_agents (agent info): {e}")
+            return []
+
+        # Parse results
         agents = []
-        for agent_id in agent_ids:
-            if only_online and not await self.is_online(agent_id):
-                continue
-
-            info = await self.get_agent_info(agent_id)
-            if info:
+        for agent_json in agent_jsons:
+            if agent_json:
+                info = AgentInfo.parse_raw(agent_json)
                 agents.append(info)
 
         return agents
@@ -243,14 +300,43 @@ class RedisAgentRegistry:
         Returns:
             Statistics dictionary
         """
-        total_agents = await self.redis.hlen("agents")
+        # Use pipeline for parallel operations
+        pipe = self.redis.pipeline()
+        pipe.hlen("agents")
+        pipe.hgetall("agents")
 
-        # Count online agents
-        online_count = 0
-        agents_dict = await self.redis.hgetall("agents")
+        try:
+            total_agents, agents_dict = await pipe.execute()
+        except Exception as e:
+            import logging
+
+            logging.error(f"Redis pipeline failed in get_stats (agent count): {e}")
+            return {
+                "total_agents": 0,
+                "online_agents": 0,
+                "offline_agents": 0,
+                "capabilities": {},
+            }
+
+        # Batch heartbeat checks
+        pipe = self.redis.pipeline()
         for agent_id in agents_dict.keys():
-            if await self.is_online(agent_id):
-                online_count += 1
+            pipe.exists(f"heartbeat:{agent_id}")
+
+        try:
+            heartbeat_results = await pipe.execute()
+        except Exception as e:
+            import logging
+
+            logging.error(f"Redis pipeline failed in get_stats (heartbeats): {e}")
+            return {
+                "total_agents": total_agents,
+                "online_agents": 0,
+                "offline_agents": total_agents,
+                "capabilities": {},
+            }
+
+        online_count = sum(1 for exists in heartbeat_results if exists > 0)
 
         # Get capability counts
         capability_keys = []
@@ -263,10 +349,25 @@ class RedisAgentRegistry:
             if cursor == 0:
                 break
 
-        capability_counts = {}
+        # Batch capability counts
+        pipe = self.redis.pipeline()
         for key in capability_keys:
-            capability = key.replace("capability:", "").replace("_", ":")
-            count = await self.redis.scard(key)
+            pipe.scard(key)
+
+        try:
+            capability_count_results = await pipe.execute()
+        except Exception as e:
+            import logging
+
+            logging.error(
+                f"Redis pipeline failed in get_stats (capability counts): {e}"
+            )
+            capability_count_results = []
+
+        capability_counts = {}
+        for key, count in zip(capability_keys, capability_count_results, strict=True):
+            capability = key.decode() if isinstance(key, bytes) else key
+            capability = capability.replace("capability:", "").replace("_", ":")
             capability_counts[capability] = count
 
         return {
