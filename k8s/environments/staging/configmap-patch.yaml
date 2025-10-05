@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: weaver-config
+data:
+  # Staging environment
+  WEAVER_TELEMETRY_ENVIRONMENT: "staging"
+  WEAVER_LOGFIRE_SEND_TO_CLOUD: "true"

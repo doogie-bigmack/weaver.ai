@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: weaver-config
+  labels:
+    app: weaver-ai-gateway
+data:
+  # Model configuration
+  WEAVER_MODEL_PROVIDER: "openai"
+  WEAVER_MODEL_NAME: "gpt-4o"
+
+  # Telemetry configuration
+  WEAVER_TELEMETRY_SERVICE_NAME: "weaver-ai"
+  WEAVER_TELEMETRY_ENVIRONMENT: "production"
+  WEAVER_LOGFIRE_SEND_TO_CLOUD: "true"
+
+  # Security configuration
+  WEAVER_AUTH_MODE: "api_key"
+
+  # Rate limiting
+  WEAVER_RATELIMIT_RPS: "10"
+  WEAVER_RATELIMIT_BURST: "20"
+
+  # Performance tuning
+  WEAVER_REQUEST_TIMEOUT_MS: "30000"
+  WEAVER_REQUEST_MAX_TOKENS: "4096"
+  WEAVER_REQUEST_MAX_TOOLS: "5"
+
+  # PII redaction
+  WEAVER_PII_REDACT: "true"
