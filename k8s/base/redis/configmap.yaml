@@ -1,0 +1,44 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: redis-config
+  labels:
+    app: redis
+data:
+  redis.conf: |
+    # Performance tuning
+    maxmemory 3gb
+    maxmemory-policy allkeys-lru
+
+    # Persistence
+    appendonly yes
+    appendfsync everysec
+    save 900 1
+    save 300 10
+    save 60 10000
+
+    # Network
+    tcp-backlog 511
+    timeout 300
+    tcp-keepalive 60
+
+    # Pub/Sub optimization for event mesh
+    client-output-buffer-limit pubsub 32mb 8mb 60
+    client-output-buffer-limit normal 0 0 0
+    client-output-buffer-limit replica 256mb 64mb 60
+
+    # Logging
+    loglevel notice
+
+    # Security
+    protected-mode yes
+
+    # Performance
+    slowlog-log-slower-than 10000
+    slowlog-max-len 128
+
+    # Memory
+    lazyfree-lazy-eviction yes
+    lazyfree-lazy-expire yes
+    lazyfree-lazy-server-del yes
+    replica-lazy-flush yes

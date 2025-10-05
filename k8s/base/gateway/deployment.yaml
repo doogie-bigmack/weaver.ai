@@ -1,0 +1,182 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: weaver-ai-gateway
+  labels:
+    app: weaver-ai-gateway
+    component: api
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: weaver-ai-gateway
+  template:
+    metadata:
+      labels:
+        app: weaver-ai-gateway
+        component: api
+    spec:
+      serviceAccountName: weaver-ai
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+
+      containers:
+      - name: weaver-ai
+        image: weaver-ai:latest
+        imagePullPolicy: IfNotPresent
+
+        ports:
+        - name: http
+          containerPort: 8000
+          protocol: TCP
+
+        env:
+        # Model configuration
+        - name: WEAVER_MODEL_PROVIDER
+          valueFrom:
+            configMapKeyRef:
+              name: weaver-config
+              key: WEAVER_MODEL_PROVIDER
+        - name: WEAVER_MODEL_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: weaver-config
+              key: WEAVER_MODEL_NAME
+        - name: WEAVER_MODEL_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: weaver-secrets
+              key: model-api-key
+              optional: true
+
+        # Telemetry configuration
+        - name: WEAVER_TELEMETRY_ENABLED
+          value: "true"
+        - name: WEAVER_TELEMETRY_SERVICE_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: weaver-config
+              key: WEAVER_TELEMETRY_SERVICE_NAME
+        - name: WEAVER_TELEMETRY_ENVIRONMENT
+          valueFrom:
+            configMapKeyRef:
+              name: weaver-config
+              key: WEAVER_TELEMETRY_ENVIRONMENT
+        - name: WEAVER_LOGFIRE_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: weaver-secrets
+              key: logfire-token
+              optional: true
+        - name: WEAVER_LOGFIRE_SEND_TO_CLOUD
+          valueFrom:
+            configMapKeyRef:
+              name: weaver-config
+              key: WEAVER_LOGFIRE_SEND_TO_CLOUD
+
+        # Security configuration
+        - name: WEAVER_AUTH_MODE
+          valueFrom:
+            configMapKeyRef:
+              name: weaver-config
+              key: WEAVER_AUTH_MODE
+        - name: WEAVER_ALLOWED_API_KEYS
+          valueFrom:
+            secretKeyRef:
+              name: weaver-secrets
+              key: allowed-api-keys
+              optional: true
+        - name: WEAVER_JWT_PUBLIC_KEY
+          valueFrom:
+            secretKeyRef:
+              name: weaver-secrets
+              key: jwt-public-key
+              optional: true
+
+        # Rate limiting
+        - name: WEAVER_RATELIMIT_RPS
+          valueFrom:
+            configMapKeyRef:
+              name: weaver-config
+              key: WEAVER_RATELIMIT_RPS
+        - name: WEAVER_RATELIMIT_BURST
+          valueFrom:
+            configMapKeyRef:
+              name: weaver-config
+              key: WEAVER_RATELIMIT_BURST
+
+        # Redis configuration
+        - name: REDIS_URL
+          value: "redis://redis-0.redis:6379"
+
+        # Performance tuning
+        - name: WEAVER_REQUEST_TIMEOUT_MS
+          valueFrom:
+            configMapKeyRef:
+              name: weaver-config
+              key: WEAVER_REQUEST_TIMEOUT_MS
+        - name: WEAVER_REQUEST_MAX_TOKENS
+          valueFrom:
+            configMapKeyRef:
+              name: weaver-config
+              key: WEAVER_REQUEST_MAX_TOKENS
+
+        resources:
+          requests:
+            cpu: 500m
+            memory: 1Gi
+          limits:
+            cpu: 2000m
+            memory: 4Gi
+
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
+
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 2
+
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          capabilities:
+            drop:
+            - ALL
+
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+        - name: cache
+          mountPath: /.cache
+
+      volumes:
+      - name: tmp
+        emptyDir: {}
+      - name: cache
+        emptyDir: {}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: weaver-ai
+  labels:
+    app: weaver-ai-gateway

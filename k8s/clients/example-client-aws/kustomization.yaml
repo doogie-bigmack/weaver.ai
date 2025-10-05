@@ -1,0 +1,46 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: weaver-ai-acme
+
+# Build from base + cloud provider + environment
+bases:
+  - ../../base
+  - ../../cloud-providers/aws
+  - ../../environments/production
+
+# Client-specific namespace
+nameSuffix: -acme
+
+# Client-specific secrets
+secretGenerator:
+  - name: weaver-secrets
+    literals:
+      - model-api-key=sk-replace-with-client-openai-key
+      - logfire-token=pylf_v1_us_mYgRgPbGDKKCPzhKgZ3lyN6ysyTQm4b6bX1lWzQc9TjQ
+      - allowed-api-keys=acme-api-key-123,acme-api-key-456
+
+# Client-specific configuration
+configMapGenerator:
+  - name: weaver-config
+    behavior: merge
+    literals:
+      - WEAVER_TELEMETRY_SERVICE_NAME=weaver-ai-acme
+      - WEAVER_MODEL_NAME=gpt-4o
+      - WEAVER_RATELIMIT_RPS=20
+      - WEAVER_RATELIMIT_BURST=40
+
+# Client-specific ingress host
+patchesJson6902:
+- target:
+    group: networking.k8s.io
+    version: v1
+    kind: Ingress
+    name: weaver-ai-ingress
+  patch: |-
+    - op: replace
+      path: /spec/rules/0/host
+      value: acme.weaver-ai.example.com
+    - op: replace
+      path: /spec/tls/0/hosts/0
+      value: acme.weaver-ai.example.com

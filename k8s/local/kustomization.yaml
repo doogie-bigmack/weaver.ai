@@ -1,0 +1,68 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: weaver-ai-local
+
+# Use base manifests
+bases:
+  - ../base
+
+nameSuffix: -local
+
+# Local deployment configuration
+configMapGenerator:
+  - name: weaver-config
+    behavior: merge
+    literals:
+      - WEAVER_MODEL_PROVIDER=openai
+      - WEAVER_MODEL_NAME=gpt-4o
+      - WEAVER_TELEMETRY_ENABLED=true
+      - WEAVER_TELEMETRY_SERVICE_NAME=weaver-ai-local
+      - WEAVER_TELEMETRY_ENVIRONMENT=local
+      - WEAVER_LOGFIRE_SEND_TO_CLOUD=false
+      - WEAVER_AUTH_MODE=api_key
+      - WEAVER_RATELIMIT_RPS=10
+      - WEAVER_RATELIMIT_BURST=20
+
+# Local secrets (for testing only - don't use in production!)
+secretGenerator:
+  - name: weaver-secrets
+    literals:
+      - model-api-key=sk-test-local-key
+      - logfire-token=pylf_v1_us_mYgRgPbGDKKCPzhKgZ3lyN6ysyTQm4b6bX1lWzQc9TjQ
+      - allowed-api-keys=["local-test-key-1","local-test-key-2"]
+
+# Patches for local deployment
+patches:
+  - target:
+      kind: Deployment
+      name: weaver-ai-gateway
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/image
+        value: weaver-ai:latest
+      - op: replace
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: Never
+      - op: replace
+        path: /spec/replicas
+        value: 1
+
+  - target:
+      kind: HorizontalPodAutoscaler
+      name: weaver-gateway-hpa
+    patch: |-
+      - op: replace
+        path: /spec/minReplicas
+        value: 1
+      - op: replace
+        path: /spec/maxReplicas
+        value: 3
+
+  - target:
+      kind: StatefulSet
+      name: redis
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 1

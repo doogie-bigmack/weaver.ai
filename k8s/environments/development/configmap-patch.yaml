@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: weaver-config
+data:
+  # Development uses stub model provider
+  WEAVER_MODEL_PROVIDER: "stub"
+  WEAVER_MODEL_NAME: "stub-model"
+
+  # Development environment
+  WEAVER_TELEMETRY_ENVIRONMENT: "development"
+  WEAVER_LOGFIRE_SEND_TO_CLOUD: "false"
+
+  # Relaxed rate limits for development
+  WEAVER_RATELIMIT_RPS: "100"
+  WEAVER_RATELIMIT_BURST: "200"

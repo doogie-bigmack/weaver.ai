@@ -1,0 +1,29 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: weaver-ai-dev
+
+nameSuffix: -dev
+
+patches:
+- path: replicas-patch.yaml
+- path: configmap-patch.yaml
+
+# Remove HPA and PDB in development
+patchesJson6902:
+- target:
+    group: autoscaling
+    version: v2
+    kind: HorizontalPodAutoscaler
+    name: weaver-gateway-hpa
+  patch: |-
+    - op: remove
+      path: /spec/minReplicas
+    - op: add
+      path: /spec/minReplicas
+      value: 1
+    - op: remove
+      path: /spec/maxReplicas
+    - op: add
+      path: /spec/maxReplicas
+      value: 3
