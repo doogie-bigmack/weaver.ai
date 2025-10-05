@@ -1,0 +1,1299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weaver AI - Architecture Documentation</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #1168bd;
+            --primary-dark: #0b4884;
+            --secondary: #438dd5;
+            --accent: #85bbf0;
+            --bg-dark: #1e1e1e;
+            --bg-light: #f5f7fa;
+            --text-dark: #2c3e50;
+            --text-light: #ecf0f1;
+            --border: #e1e4e8;
+            --success: #28a745;
+            --warning: #ffc107;
+            --danger: #dc3545;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', sans-serif;
+            line-height: 1.6;
+            color: var(--text-dark);
+            background: var(--bg-light);
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: var(--text-light);
+            padding: 2rem 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .version-badge {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+
+        /* Navigation */
+        .nav {
+            background: white;
+            border-bottom: 2px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 999;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .nav-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            gap: 0.5rem;
+            overflow-x: auto;
+        }
+
+        .nav-btn {
+            background: none;
+            border: none;
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--text-dark);
+            transition: all 0.3s;
+            border-bottom: 3px solid transparent;
+            white-space: nowrap;
+        }
+
+        .nav-btn:hover {
+            background: var(--bg-light);
+            color: var(--primary);
+        }
+
+        .nav-btn.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        /* Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Section */
+        .section {
+            display: none;
+            animation: fadeIn 0.5s;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Cards */
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border-left: 4px solid var(--primary);
+        }
+
+        .card h2 {
+            color: var(--primary);
+            margin-bottom: 1rem;
+            font-size: 1.8rem;
+            font-weight: 600;
+        }
+
+        .card h3 {
+            color: var(--secondary);
+            margin-top: 1.5rem;
+            margin-bottom: 1rem;
+            font-size: 1.4rem;
+        }
+
+        .card h4 {
+            color: var(--text-dark);
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+            font-size: 1.1rem;
+        }
+
+        /* Lists */
+        ul, ol {
+            margin-left: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        li {
+            margin-bottom: 0.5rem;
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+            background: white;
+        }
+
+        th {
+            background: var(--primary);
+            color: white;
+            padding: 0.75rem;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        td {
+            padding: 0.75rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        tr:hover {
+            background: var(--bg-light);
+        }
+
+        /* Code blocks */
+        pre {
+            background: var(--bg-dark);
+            color: var(--text-light);
+            padding: 1.5rem;
+            border-radius: 6px;
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+
+        code {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.9rem;
+        }
+
+        /* Inline code */
+        p code, li code {
+            background: #f0f0f0;
+            color: var(--danger);
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            font-size: 0.9em;
+        }
+
+        /* Badges */
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-right: 0.5rem;
+        }
+
+        .badge-success { background: var(--success); color: white; }
+        .badge-warning { background: var(--warning); color: var(--text-dark); }
+        .badge-danger { background: var(--danger); color: white; }
+        .badge-info { background: var(--secondary); color: white; }
+
+        /* Status indicators */
+        .status {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 0.5rem;
+        }
+
+        .status-active { background: var(--success); }
+        .status-pending { background: var(--warning); }
+        .status-deprecated { background: var(--danger); }
+
+        /* Grid */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin: 1.5rem 0;
+        }
+
+        .grid-item {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 1.5rem;
+        }
+
+        .grid-item h4 {
+            color: var(--primary);
+            margin-top: 0;
+        }
+
+        /* Alert boxes */
+        .alert {
+            padding: 1rem 1.5rem;
+            border-radius: 6px;
+            margin: 1rem 0;
+            border-left: 4px solid;
+        }
+
+        .alert-info {
+            background: #d1ecf1;
+            border-color: #0c5460;
+            color: #0c5460;
+        }
+
+        .alert-warning {
+            background: #fff3cd;
+            border-color: #856404;
+            color: #856404;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            border-color: #155724;
+            color: #155724;
+        }
+
+        /* Mermaid diagrams */
+        .mermaid {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+            text-align: center;
+        }
+
+        /* Footer */
+        .footer {
+            background: var(--bg-dark);
+            color: var(--text-light);
+            text-align: center;
+            padding: 2rem;
+            margin-top: 4rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header h1 { font-size: 1.8rem; }
+            .container { padding: 1rem; }
+            .card { padding: 1rem; }
+            .grid { grid-template-columns: 1fr; }
+        }
+
+        /* Print styles */
+        @media print {
+            .header, .nav, .footer { display: none; }
+            .section { display: block !important; page-break-after: always; }
+            .card { box-shadow: none; border: 1px solid var(--border); }
+        }
+
+        /* TOC */
+        .toc {
+            background: var(--bg-light);
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .toc h3 {
+            margin-top: 0;
+            color: var(--primary);
+        }
+
+        .toc ul {
+            list-style: none;
+            margin-left: 0;
+        }
+
+        .toc li {
+            padding: 0.3rem 0;
+        }
+
+        .toc a {
+            color: var(--secondary);
+            text-decoration: none;
+        }
+
+        .toc a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <h1>🕸️ Weaver AI - Architecture Documentation</h1>
+            <p>Comprehensive end-to-end architecture guide for the A2A-compliant multi-agent framework</p>
+            <span class="version-badge">Version 1.0.0 | Updated: October 3, 2025</span>
+        </div>
+    </header>
+
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="nav-content">
+            <button class="nav-btn active" onclick="showSection('overview')">Overview</button>
+            <button class="nav-btn" onclick="showSection('diagrams')">C4 Diagrams</button>
+            <button class="nav-btn" onclick="showSection('security')">Security</button>
+            <button class="nav-btn" onclick="showSection('adrs')">ADRs</button>
+            <button class="nav-btn" onclick="showSection('deployment')">Deployment</button>
+            <button class="nav-btn" onclick="showSection('quickstart')">Quick Start</button>
+        </div>
+    </nav>
+
+    <!-- Content -->
+    <div class="container">
+        <!-- Overview Section -->
+        <section id="overview" class="section active">
+            <div class="card">
+                <h2>System Overview</h2>
+                <p>Weaver AI is an A2A-compliant (Agent-to-Agent) multi-agent orchestration framework designed to enable developers to build secure, scalable, and observable AI agent systems with minimal boilerplate code.</p>
+
+                <h3>Key Capabilities</h3>
+                <div class="grid">
+                    <div class="grid-item">
+                        <h4>🚀 Simple Agent Creation</h4>
+                        <p>Define agents using Python decorators in &lt;20 lines of code</p>
+                    </div>
+                    <div class="grid-item">
+                        <h4>🔗 Multi-Agent Orchestration</h4>
+                        <p>Capability-based routing and Redis event mesh for distributed agents</p>
+                    </div>
+                    <div class="grid-item">
+                        <h4>🔒 Enterprise Security</h4>
+                        <p>JWT/API key auth, RBAC, rate limiting, PII redaction, audit logging</p>
+                    </div>
+                    <div class="grid-item">
+                        <h4>🛠️ MCP Integration</h4>
+                        <p>Model Context Protocol for standardized tool management</p>
+                    </div>
+                    <div class="grid-item">
+                        <h4>📊 Type-Safe Flows</h4>
+                        <p>Automatic agent routing based on Python type hints</p>
+                    </div>
+                    <div class="grid-item">
+                        <h4>🐳 Production Ready</h4>
+                        <p>Docker support, health checks, telemetry, graceful shutdown</p>
+                    </div>
+                </div>
+
+                <h3>Technology Stack</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Layer</th>
+                            <th>Technology</th>
+                            <th>Purpose</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Language</strong></td>
+                            <td>Python 3.12+</td>
+                            <td>Application runtime</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Web Framework</strong></td>
+                            <td>FastAPI (ASGI)</td>
+                            <td>HTTP API</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Agent Framework</strong></td>
+                            <td>Pydantic AI</td>
+                            <td>Agent orchestration</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Communication</strong></td>
+                            <td>Redis (pub/sub)</td>
+                            <td>Event mesh</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Protocols</strong></td>
+                            <td>A2A, MCP</td>
+                            <td>Standards compliance</td>
+                        </tr>
+                        <tr>
+                            <td><strong>LLM Providers</strong></td>
+                            <td>OpenAI, Anthropic, Groq</td>
+                            <td>Model inference</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Validation</strong></td>
+                            <td>Pydantic v2</td>
+                            <td>Type safety</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Observability</strong></td>
+                            <td>OpenTelemetry</td>
+                            <td>Metrics & tracing</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>Architecture Principles</h3>
+                <ol>
+                    <li><strong>Developer Experience First</strong> - Minimal boilerplate, type safety, progressive disclosure</li>
+                    <li><strong>Security by Default</strong> - All endpoints require auth, PII redaction enabled, comprehensive audit logging</li>
+                    <li><strong>Composability</strong> - Agents are functions that can be chained, routed, or parallelized</li>
+                    <li><strong>Distributed Architecture</strong> - Redis event mesh enables horizontal scaling</li>
+                    <li><strong>Observable and Verifiable</strong> - OpenTelemetry integration, output verification, comprehensive metrics</li>
+                </ol>
+            </div>
+
+            <div class="card">
+                <h2>Project Structure</h2>
+                <pre><code>weaver_ai/
+├── simple/              # Simple API for developers
+│   ├── decorators.py   # @agent decorator
+│   ├── flow.py         # Flow builder
+│   └── runners.py      # run() and serve()
+├── agents/             # Agent framework
+│   ├── base.py         # BaseAgent with capabilities
+│   ├── capabilities.py # Capability management
+│   └── tool_manager.py # Tool integration
+├── tools/              # MCP tool framework
+│   ├── base.py         # Tool base classes
+│   ├── registry.py     # Tool registry
+│   └── builtin/        # Built-in tools
+├── models/             # Model adapters
+│   ├── router.py       # Model routing
+│   ├── openai_adapter.py
+│   └── cached.py       # Caching layer
+├── redis/              # Redis communication
+│   ├── mesh.py         # Event mesh
+│   ├── queue.py        # Work queue
+│   └── registry.py     # Agent registry
+├── security/           # Security modules
+│   ├── auth.py         # Authentication
+│   ├── rbac.py         # Authorization
+│   └── policy.py       # Guardrails
+└── gateway.py          # FastAPI application</code></pre>
+            </div>
+        </section>
+
+        <!-- Diagrams Section -->
+        <section id="diagrams" class="section">
+            <div class="card">
+                <h2>C4 Model Diagrams</h2>
+                <p>Architecture visualizations following the C4 model: Context, Container, Component, and Code.</p>
+
+                <h3>Level 1: System Context</h3>
+                <div class="mermaid">
+graph TB
+    subgraph "External Actors"
+        DEV[Developer<br/>Builds agents with @agent decorator]
+        USER[End User<br/>Consumes agent services via API]
+        ADMIN[Administrator<br/>Manages policies and monitors]
+    end
+
+    subgraph "Weaver AI System"
+        WEAVER[Weaver AI<br/>Multi-agent orchestration framework]
+    end
+
+    subgraph "External Systems"
+        OPENAI[OpenAI API<br/>GPT-4, GPT-3.5]
+        ANTHROPIC[Anthropic API<br/>Claude models]
+        REDIS[Redis<br/>Event mesh & caching]
+        TOOLS[External Tools<br/>Web search, databases, SailPoint]
+    end
+
+    DEV -->|Creates agents| WEAVER
+    USER -->|HTTP requests| WEAVER
+    ADMIN -->|Configures policies| WEAVER
+
+    WEAVER -->|LLM inference| OPENAI
+    WEAVER -->|LLM inference| ANTHROPIC
+    WEAVER -->|Event pub/sub| REDIS
+    WEAVER -->|Tool execution| TOOLS
+
+    style WEAVER fill:#1168bd,stroke:#0b4884,color:#ffffff
+    style DEV fill:#08427b,stroke:#052e56,color:#ffffff
+    style USER fill:#08427b,stroke:#052e56,color:#ffffff
+    style ADMIN fill:#08427b,stroke:#052e56,color:#ffffff
+                </div>
+
+                <h3>Level 2: Container Architecture</h3>
+                <div class="alert alert-info">
+                    <strong>Note:</strong> The container diagram shows the high-level runtime components and their relationships. All components share security, tool, and model infrastructure.
+                </div>
+                <div class="mermaid">
+graph TB
+    subgraph "API Layer"
+        GATEWAY[API Gateway<br/>FastAPI<br/>Port 8000]
+    end
+
+    subgraph "Agent Layer"
+        SIMPLE[Simple API<br/>@agent decorators]
+        AGENTS[BaseAgent Instances<br/>Event processing]
+    end
+
+    subgraph "Infrastructure"
+        MCP[MCP Tool Registry]
+        MODELS[Model Router]
+        SECURITY[Security Module]
+        MEMORY[Agent Memory]
+    end
+
+    subgraph "Communication"
+        MESH[Redis Event Mesh]
+        QUEUE[Work Queue]
+        REGISTRY[Agent Registry]
+    end
+
+    USER[User] -->|HTTP POST /ask| GATEWAY
+    GATEWAY -->|Auth & Rate Limit| SECURITY
+    GATEWAY --> AGENTS
+    SIMPLE -.->|Creates| AGENTS
+    AGENTS -->|Use tools| MCP
+    AGENTS -->|LLM calls| MODELS
+    AGENTS -->|Publish/subscribe| MESH
+    AGENTS -->|Register| REGISTRY
+
+    style GATEWAY fill:#1168bd,stroke:#0b4884,color:#ffffff
+    style SIMPLE fill:#1168bd,stroke:#0b4884,color:#ffffff
+    style AGENTS fill:#1168bd,stroke:#0b4884,color:#ffffff
+                </div>
+
+                <h3>Security Architecture</h3>
+                <div class="mermaid">
+graph TB
+    REQUEST[Incoming Request]
+    AUTH[1. Authentication<br/>JWT/API Key]
+    RATE[2. Rate Limiting<br/>Token bucket]
+    INPUT[3. Input Validation<br/>Pydantic + Guards]
+    RBAC[4. Authorization<br/>RBAC check]
+    EXEC[5. Agent Execution]
+    OUTPUT[6. Output Sanitization<br/>PII redaction]
+    AUDIT[7. Audit Logging]
+    RESPONSE[Response]
+
+    REQUEST --> AUTH
+    AUTH --> RATE
+    RATE --> INPUT
+    INPUT --> RBAC
+    RBAC --> EXEC
+    EXEC --> OUTPUT
+    OUTPUT --> AUDIT
+    AUDIT --> RESPONSE
+
+    style AUTH fill:#1168bd,stroke:#0b4884,color:#ffffff
+    style RBAC fill:#1168bd,stroke:#0b4884,color:#ffffff
+    style OUTPUT fill:#1168bd,stroke:#0b4884,color:#ffffff
+                </div>
+
+                <h3>Data Flow: HTTP Request</h3>
+                <div class="mermaid">
+sequenceDiagram
+    participant Client
+    participant Gateway
+    participant Auth
+    participant Policy
+    participant Agent
+    participant LLM
+    participant Verifier
+
+    Client->>Gateway: POST /ask
+    Gateway->>Auth: Authenticate
+    Auth-->>Gateway: UserContext
+    Gateway->>Policy: InputGuard
+    Policy-->>Gateway: Sanitized
+    Gateway->>Agent: Execute
+    Agent->>LLM: Generate
+    LLM-->>Agent: Response
+    Agent->>Verifier: Verify
+    Verifier-->>Agent: Valid
+    Agent-->>Gateway: Result
+    Gateway->>Policy: OutputGuard
+    Policy-->>Gateway: Redacted
+    Gateway-->>Client: QueryResponse
+                </div>
+            </div>
+        </section>
+
+        <!-- Security Section -->
+        <section id="security" class="section">
+            <div class="card">
+                <h2>Security Architecture</h2>
+
+                <div class="alert alert-success">
+                    <strong>Security-First Design:</strong> Weaver AI implements defense-in-depth with 9 security layers and zero-trust principles.
+                </div>
+
+                <h3>Security Layers</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Layer</th>
+                            <th>Control</th>
+                            <th>Purpose</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>1. Transport</td>
+                            <td>TLS 1.3</td>
+                            <td>Encryption in transit</td>
+                        </tr>
+                        <tr>
+                            <td>2. Authentication</td>
+                            <td>JWT/API Key</td>
+                            <td>Identity verification</td>
+                        </tr>
+                        <tr>
+                            <td>3. Rate Limiting</td>
+                            <td>Token Bucket</td>
+                            <td>DoS protection</td>
+                        </tr>
+                        <tr>
+                            <td>4. Input Validation</td>
+                            <td>Pydantic</td>
+                            <td>Schema enforcement</td>
+                        </tr>
+                        <tr>
+                            <td>5. Authorization</td>
+                            <td>RBAC</td>
+                            <td>Permission checks</td>
+                        </tr>
+                        <tr>
+                            <td>6. Policy Guards</td>
+                            <td>Content filters</td>
+                            <td>Block malicious input</td>
+                        </tr>
+                        <tr>
+                            <td>7. Execution Isolation</td>
+                            <td>Sandboxing</td>
+                            <td>Limit tool access</td>
+                        </tr>
+                        <tr>
+                            <td>8. Output Sanitization</td>
+                            <td>PII Redaction</td>
+                            <td>Protect sensitive data</td>
+                        </tr>
+                        <tr>
+                            <td>9. Audit Logging</td>
+                            <td>Structured logs</td>
+                            <td>Compliance & forensics</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>Authentication Modes</h3>
+                <div class="grid">
+                    <div class="grid-item">
+                        <h4>API Key Authentication</h4>
+                        <p><span class="badge badge-info">Development</span></p>
+                        <p><strong>Config:</strong> <code>WEAVER_AUTH_MODE=api_key</code></p>
+                        <p><strong>Header:</strong> <code>Authorization: Bearer &lt;api-key&gt;</code></p>
+                        <p><strong>Validation:</strong> Constant-time comparison against allowed keys</p>
+                    </div>
+                    <div class="grid-item">
+                        <h4>JWT Authentication</h4>
+                        <p><span class="badge badge-success">Production</span></p>
+                        <p><strong>Config:</strong> <code>WEAVER_AUTH_MODE=jwt</code></p>
+                        <p><strong>Header:</strong> <code>Authorization: Bearer &lt;jwt-token&gt;</code></p>
+                        <p><strong>Validation:</strong> RSA-256 signature verification</p>
+                    </div>
+                </div>
+
+                <h3>Tool Security Matrix</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tool</th>
+                            <th>Sensitivity</th>
+                            <th>Rate Limit</th>
+                            <th>Approval Required</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>python_eval</td>
+                            <td><span class="badge badge-warning">Low</span></td>
+                            <td>100/min</td>
+                            <td>No</td>
+                        </tr>
+                        <tr>
+                            <td>web_search</td>
+                            <td><span class="badge badge-warning">Low</span></td>
+                            <td>60/min</td>
+                            <td>No</td>
+                        </tr>
+                        <tr>
+                            <td>database_query</td>
+                            <td><span class="badge badge-danger">High</span></td>
+                            <td>30/min</td>
+                            <td>Yes</td>
+                        </tr>
+                        <tr>
+                            <td>code_execution</td>
+                            <td><span class="badge badge-danger">High</span></td>
+                            <td>10/min</td>
+                            <td>Yes</td>
+                        </tr>
+                        <tr>
+                            <td>sailpoint_iiq</td>
+                            <td><span class="badge badge-danger">High</span></td>
+                            <td>30/min</td>
+                            <td>No</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>PII Redaction</h3>
+                <p>Automatic detection and redaction of sensitive information:</p>
+                <ul>
+                    <li><strong>SSN:</strong> <code>\d{3}-\d{2}-\d{4}</code> → <code>[SSN-REDACTED]</code></li>
+                    <li><strong>Credit Card:</strong> <code>\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}</code> → <code>[CARD-REDACTED]</code></li>
+                    <li><strong>Email:</strong> Pattern-based → <code>[EMAIL-REDACTED]</code></li>
+                    <li><strong>Phone:</strong> Multiple formats → <code>[PHONE-REDACTED]</code></li>
+                </ul>
+                <p><strong>Configuration:</strong> <code>WEAVER_PII_REDACT=true</code> (enabled by default)</p>
+
+                <h3>Compliance Support</h3>
+                <div class="grid">
+                    <div class="grid-item">
+                        <h4>GDPR</h4>
+                        <ul>
+                            <li>Right to erasure</li>
+                            <li>Right to access</li>
+                            <li>Data minimization</li>
+                            <li>PII redaction</li>
+                        </ul>
+                    </div>
+                    <div class="grid-item">
+                        <h4>SOC 2 Type II</h4>
+                        <ul>
+                            <li>Access controls (RBAC)</li>
+                            <li>Audit trails</li>
+                            <li>Encryption</li>
+                            <li>Change management</li>
+                        </ul>
+                    </div>
+                    <div class="grid-item">
+                        <h4>HIPAA</h4>
+                        <ul>
+                            <li>PHI protection</li>
+                            <li>Access logs</li>
+                            <li>TLS 1.3 encryption</li>
+                            <li>Integrity controls</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ADRs Section -->
+        <section id="adrs" class="section">
+            <div class="card">
+                <h2>Architecture Decision Records</h2>
+                <p>Key architectural decisions and their rationale:</p>
+
+                <h3><span class="status status-active"></span>ADR-001: Dual API Design</h3>
+                <p><strong>Decision:</strong> Provide two complementary APIs - Simple API (@agent decorator) for developers and BaseAgent for advanced use cases.</p>
+                <p><strong>Rationale:</strong></p>
+                <ul>
+                    <li><strong>Problem:</strong> Need both simplicity for beginners and flexibility for production</li>
+                    <li><strong>Solution:</strong> Progressive disclosure - start simple, add complexity when needed</li>
+                    <li><strong>Benefits:</strong> Low barrier to entry, production-ready scaling path</li>
+                </ul>
+                <div class="grid">
+                    <div class="grid-item">
+                        <h4>Simple API</h4>
+                        <p><strong>Target:</strong> Application developers</p>
+                        <p><strong>Use Case:</strong> Single-agent systems, rapid prototyping</p>
+                        <pre><code>@agent(model="gpt-4")
+async def summarizer(text: str) -> str:
+    return f"Summary: {text}"</code></pre>
+                    </div>
+                    <div class="grid-item">
+                        <h4>BaseAgent API</h4>
+                        <p><strong>Target:</strong> Framework developers</p>
+                        <p><strong>Use Case:</strong> Distributed systems, multi-agent orchestration</p>
+                        <pre><code>class CustomAgent(BaseAgent):
+    capabilities = ["processing"]
+
+    async def process(self, event):
+        return Result(success=True)</code></pre>
+                    </div>
+                </div>
+
+                <h3><span class="status status-active"></span>ADR-002: Redis Event Mesh</h3>
+                <p><strong>Decision:</strong> Use Redis as the event mesh backbone for agent communication.</p>
+                <p><strong>Rationale:</strong></p>
+                <ul>
+                    <li><strong>Problem:</strong> Need distributed agent communication with capability-based routing</li>
+                    <li><strong>Solution:</strong> Redis pub/sub for events, work queues for tasks, registry for discovery</li>
+                    <li><strong>Benefits:</strong> Sub-millisecond latency, battle-tested, simple setup</li>
+                    <li><strong>Trade-offs:</strong> Single point of failure (mitigated with Sentinel)</li>
+                </ul>
+                <p><strong>Alternatives Considered:</strong></p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Alternative</th>
+                            <th>Pros</th>
+                            <th>Cons</th>
+                            <th>Why Not Chosen</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>RabbitMQ/Kafka</td>
+                            <td>Guaranteed delivery, complex routing</td>
+                            <td>Heavy infrastructure, slower</td>
+                            <td>Too complex, higher latency</td>
+                        </tr>
+                        <tr>
+                            <td>gRPC Streaming</td>
+                            <td>Type-safe, direct connections</td>
+                            <td>Service discovery needed</td>
+                            <td>More boilerplate</td>
+                        </tr>
+                        <tr>
+                            <td>HTTP Webhooks</td>
+                            <td>Simple, existing infra</td>
+                            <td>Higher latency, firewall issues</td>
+                            <td>Too much overhead</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3><span class="status status-active"></span>ADR-003: MCP Tool Protocol</h3>
+                <p><strong>Decision:</strong> Adopt Model Context Protocol (MCP) as the standard for tool integration.</p>
+                <p><strong>Rationale:</strong></p>
+                <ul>
+                    <li><strong>Problem:</strong> Need standardized way to discover, execute, and secure tools</li>
+                    <li><strong>Solution:</strong> MCP provides server-client architecture with JSON-RPC and JWT security</li>
+                    <li><strong>Benefits:</strong> Industry standard, interoperability, built-in security</li>
+                    <li><strong>Trade-offs:</strong> Learning curve, emerging standard</li>
+                </ul>
+                <p><strong>MCP Architecture:</strong></p>
+                <ul>
+                    <li><strong>Discovery:</strong> Tools self-describe via JSON Schema</li>
+                    <li><strong>Execution:</strong> JSON-RPC 2.0 protocol</li>
+                    <li><strong>Security:</strong> JWT signatures, nonce replay protection</li>
+                    <li><strong>Extensibility:</strong> Easy to add custom tools</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- Deployment Section -->
+        <section id="deployment" class="section">
+            <div class="card">
+                <h2>Deployment Guide</h2>
+
+                <h3>Environment Configurations</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Environment</th>
+                            <th>API Pods</th>
+                            <th>Security</th>
+                            <th>Model Provider</th>
+                            <th>Use Case</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Development</strong></td>
+                            <td>1</td>
+                            <td>API Key</td>
+                            <td>Stub</td>
+                            <td>Local development</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Staging</strong></td>
+                            <td>2</td>
+                            <td>JWT</td>
+                            <td>OpenAI (test keys)</td>
+                            <td>Integration testing</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Production</strong></td>
+                            <td>3+</td>
+                            <td>JWT + RBAC</td>
+                            <td>OpenAI/Anthropic</td>
+                            <td>Production workloads</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>Docker Deployment</h3>
+                <pre><code># Build image
+docker build -t weaver-ai:latest .
+
+# Run with environment file
+docker run -d \
+  --name weaver-ai \
+  --env-file .env.production \
+  -p 8000:8000 \
+  weaver-ai:latest
+
+# Check health
+curl http://localhost:8000/health</code></pre>
+
+                <h3>Kubernetes Deployment</h3>
+                <p><strong>Key Components:</strong></p>
+                <ul>
+                    <li><strong>Deployment:</strong> 3+ replicas with rolling updates</li>
+                    <li><strong>Service:</strong> ClusterIP for internal access</li>
+                    <li><strong>Ingress:</strong> NGINX with TLS termination</li>
+                    <li><strong>HPA:</strong> Autoscaling based on CPU/memory (3-10 pods)</li>
+                    <li><strong>StatefulSet:</strong> Redis cluster with persistence</li>
+                </ul>
+
+                <pre><code># Deploy all manifests
+kubectl apply -f namespace.yaml
+kubectl apply -f configmap.yaml
+kubectl apply -f secret.yaml
+kubectl apply -f deployment.yaml
+kubectl apply -f service.yaml
+kubectl apply -f ingress.yaml
+kubectl apply -f hpa.yaml
+
+# Check status
+kubectl get pods -n weaver-ai
+kubectl get svc -n weaver-ai
+
+# Scale manually
+kubectl scale deployment weaver-api --replicas=5 -n weaver-ai</code></pre>
+
+                <h3>Infrastructure Requirements</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Resource</th>
+                            <th>Development</th>
+                            <th>Staging</th>
+                            <th>Production</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>API Pods CPU</td>
+                            <td>0.5 cores</td>
+                            <td>2 cores</td>
+                            <td>6+ cores</td>
+                        </tr>
+                        <tr>
+                            <td>API Pods Memory</td>
+                            <td>512Mi</td>
+                            <td>2Gi</td>
+                            <td>6Gi+</td>
+                        </tr>
+                        <tr>
+                            <td>Redis CPU</td>
+                            <td>0.25 cores</td>
+                            <td>0.5 cores</td>
+                            <td>3 cores</td>
+                        </tr>
+                        <tr>
+                            <td>Redis Memory</td>
+                            <td>512Mi</td>
+                            <td>1Gi</td>
+                            <td>6Gi</td>
+                        </tr>
+                        <tr>
+                            <td>Storage</td>
+                            <td>1Gi</td>
+                            <td>10Gi</td>
+                            <td>50Gi+</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>Monitoring & Health Checks</h3>
+                <p><strong>Endpoints:</strong></p>
+                <ul>
+                    <li><code>GET /health</code> - Service health status</li>
+                    <li><code>GET /ready</code> - Readiness for traffic</li>
+                    <li><code>GET /metrics</code> - Prometheus metrics</li>
+                </ul>
+
+                <p><strong>Key Metrics:</strong></p>
+                <ul>
+                    <li><code>http_requests_total</code> - Total HTTP requests</li>
+                    <li><code>http_request_duration_seconds</code> - Request latency (p50, p95, p99)</li>
+                    <li><code>agent_execution_duration_seconds</code> - Agent processing time</li>
+                    <li><code>redis_connected_clients</code> - Redis connection count</li>
+                    <li><code>pod_cpu_usage</code> - CPU utilization per pod</li>
+                </ul>
+
+                <h3>Disaster Recovery</h3>
+                <div class="grid">
+                    <div class="grid-item">
+                        <h4>Backup Strategy</h4>
+                        <ul>
+                            <li>Redis: Daily RDB snapshots</li>
+                            <li>Audit logs: Weekly S3 archive</li>
+                            <li>Retention: 7 daily, 4 weekly, 12 monthly</li>
+                        </ul>
+                    </div>
+                    <div class="grid-item">
+                        <h4>Recovery Procedures</h4>
+                        <ul>
+                            <li>Redis failure: Sentinel auto-promotion</li>
+                            <li>API failure: Rolling restart from last known-good</li>
+                            <li>Complete outage: Restore from backup + redeploy</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Quick Start Section -->
+        <section id="quickstart" class="section">
+            <div class="card">
+                <h2>Quick Start Guide</h2>
+
+                <h3>Installation</h3>
+                <pre><code># Clone repository
+git clone https://github.com/doogie-bigmack/weaver.ai.git
+cd weaver.ai
+
+# Install with development dependencies
+pip install -e .[dev]
+
+# Set up environment
+cp .env.example .env
+# Edit .env with your API keys</code></pre>
+
+                <h3>Your First Agent in 10 Lines</h3>
+                <pre><code>from weaver_ai.simple import agent, run
+
+@agent(model="gpt-4")
+async def calculator(expression: str) -> float:
+    """A simple calculator agent."""
+    return eval(expression)  # Use ast.literal_eval in production
+
+# Run the agent
+result = await run(calculator, "2 + 2")
+print(result)  # Output: 4.0</code></pre>
+
+                <h3>Multi-Agent Flow Example</h3>
+                <pre><code>from weaver_ai.simple import agent, flow
+from typing import Literal
+
+@agent(model="gpt-4")
+async def classifier(text: str) -> Literal["technical", "billing", "general"]:
+    """Classify customer inquiries."""
+    return "technical"
+
+@agent(model="gpt-3.5-turbo")
+async def tech_support(query: str) -> str:
+    """Handle technical support queries."""
+    return f"Technical solution for: {query}"
+
+# Create a multi-agent flow
+support_flow = (
+    flow("customer_support")
+    .chain(classifier)
+    .route({
+        "technical": tech_support,
+        "billing": billing_support,
+    })
+)
+
+# Run the flow
+response = await support_flow.run("My API key isn't working")
+print(response)</code></pre>
+
+                <h3>Serve as HTTP API</h3>
+                <pre><code>from weaver_ai.simple import agent, serve
+
+@agent(model="gpt-4")
+async def assistant(message: str) -> str:
+    """A helpful assistant."""
+    return f"I can help with: {message}"
+
+# Start HTTP server
+if __name__ == "__main__":
+    serve(assistant, port=8000)
+    # Now accessible at http://localhost:8000/ask</code></pre>
+
+                <h3>Development Commands</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Command</th>
+                            <th>Purpose</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>pytest</code></td>
+                            <td>Run all tests</td>
+                        </tr>
+                        <tr>
+                            <td><code>pytest --cov=weaver_ai</code></td>
+                            <td>Run tests with coverage</td>
+                        </tr>
+                        <tr>
+                            <td><code>ruff check .</code></td>
+                            <td>Lint code</td>
+                        </tr>
+                        <tr>
+                            <td><code>black .</code></td>
+                            <td>Format code</td>
+                        </tr>
+                        <tr>
+                            <td><code>mypy weaver_ai</code></td>
+                            <td>Type checking</td>
+                        </tr>
+                        <tr>
+                            <td><code>uvicorn weaver_ai.gateway:app --reload</code></td>
+                            <td>Start development server</td>
+                        </tr>
+                        <tr>
+                            <td><code>docker-compose up</code></td>
+                            <td>Start with Docker</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>Essential Environment Variables</h3>
+                <pre><code># Model configuration
+WEAVER_MODEL_PROVIDER=openai  # or anthropic, groq, stub
+WEAVER_MODEL_NAME=gpt-4
+OPENAI_API_KEY=your-api-key-here
+
+# Security
+WEAVER_AUTH_MODE=api_key  # or jwt
+WEAVER_ALLOWED_API_KEYS=dev-key-123
+
+# Redis
+REDIS_HOST=localhost
+REDIS_PORT=6379
+
+# Optional
+WEAVER_TELEMETRY_ENABLED=false
+WEAVER_PII_REDACT=true</code></pre>
+
+                <h3>Next Steps</h3>
+                <ol>
+                    <li>Review the <a href="#overview" onclick="showSection('overview')">Architecture Overview</a></li>
+                    <li>Study the <a href="#diagrams" onclick="showSection('diagrams')">C4 Diagrams</a></li>
+                    <li>Understand <a href="#security" onclick="showSection('security')">Security Architecture</a></li>
+                    <li>Read <a href="#adrs" onclick="showSection('adrs')">Architecture Decision Records</a></li>
+                    <li>Follow the <a href="#deployment" onclick="showSection('deployment')">Deployment Guide</a></li>
+                </ol>
+            </div>
+        </section>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p><strong>Weaver AI Architecture Documentation</strong></p>
+        <p>Version 1.0.0 | Last Updated: October 3, 2025</p>
+        <p>Built with ❤️ by the Weaver AI Team</p>
+        <p style="margin-top: 1rem; font-size: 0.9rem;">
+            <a href="https://github.com/doogie-bigmack/weaver.ai" style="color: var(--accent);">GitHub</a> |
+            <a href="https://github.com/doogie-bigmack/weaver.ai/issues" style="color: var(--accent);">Issues</a> |
+            <a href="https://github.com/doogie-bigmack/weaver.ai/discussions" style="color: var(--accent);">Discussions</a>
+        </p>
+    </footer>
+
+    <script>
+        // Initialize Mermaid
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default',
+            securityLevel: 'loose',
+            flowchart: {
+                useMaxWidth: true,
+                htmlLabels: true,
+                curve: 'basis'
+            }
+        });
+
+        // Navigation
+        function showSection(sectionId) {
+            // Hide all sections
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.remove('active');
+            });
+
+            // Remove active class from all nav buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // Show selected section
+            document.getElementById(sectionId).classList.add('active');
+
+            // Add active class to clicked button
+            event.target.classList.add('active');
+
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Print functionality
+        function printDocs() {
+            window.print();
+        }
+
+        // Copy code blocks
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('pre code').forEach(block => {
+                block.style.cursor = 'pointer';
+                block.title = 'Click to copy';
+                block.addEventListener('click', function() {
+                    navigator.clipboard.writeText(this.textContent).then(() => {
+                        const originalBg = this.style.background;
+                        this.style.background = '#28a745';
+                        setTimeout(() => {
+                            this.style.background = originalBg;
+                        }, 300);
+                    });
+                });
+            });
+        });
+    </script>
+</body>
+</html>
