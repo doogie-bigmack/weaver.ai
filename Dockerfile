@@ -13,10 +13,10 @@ WORKDIR /app
 COPY pyproject.toml .
 COPY weaver_ai/ weaver_ai/
 COPY tests/ tests/
-COPY demo_event_mesh.py .
-COPY verify_phase2.py .
+COPY agents/ agents/
+COPY scripts/ scripts/
+COPY examples/ examples/
 COPY models.yaml .
-COPY gateway_cached.py .
 
 # Install Python dependencies
 RUN pip install --upgrade pip && \
