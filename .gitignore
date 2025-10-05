@@ -10,6 +10,9 @@ __pycache__/
 .sbom/
 sbom/
 *.pem
+.DS_Store
+.coverage
+.conductor/
 
 # Test agent output
 agents/**/*.json
@@ -20,3 +23,6 @@ agents/**/output/
 scripts/**/*.json
 scripts/**/*.log
 scripts/**/output/
+
+# Test scripts (ad-hoc testing)
+test_*.sh
