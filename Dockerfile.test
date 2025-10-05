@@ -22,12 +22,10 @@ RUN pip install --no-cache-dir \
 # Copy application code
 COPY weaver_ai/ weaver_ai/
 COPY tests/ tests/
-COPY demo_event_mesh.py .
-COPY verify_phase2.py .
+COPY agents/ agents/
+COPY scripts/ scripts/
+COPY examples/ examples/
 COPY models.yaml .
-COPY run_pentest_with_gpt5_ready.py .
-COPY run_powder_finder_pentest.py .
-COPY run_framework_validation.py .
 
 # Run tests
 CMD ["python", "-m", "pytest", "tests/unit/test_event_mesh.py", "-v", "-s"]
