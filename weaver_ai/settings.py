@@ -12,8 +12,17 @@ class AppSettings(BaseSettings):
     model_name: str = "gpt-4o"
     model_endpoint: str | None = None
     model_api_key: str | None = None
-    telemetry_enabled: bool = False
-    telemetry_endpoint: str | None = None
+
+    # Telemetry settings (Logfire)
+    telemetry_enabled: bool = True
+    telemetry_service_name: str = "weaver-ai"
+    telemetry_environment: str = "development"
+    logfire_token: str | None = None
+    logfire_send_to_cloud: bool = False
+    telemetry_signing_enabled: bool = True
+    telemetry_signing_key: str | None = None  # RSA private key for signing events
+    telemetry_verification_key: str | None = None  # RSA public key for verification
+
     auth_mode: Literal["api_key", "jwt"] = "api_key"
     allowed_api_keys: list[str] = []
     jwt_public_key: str | None = None
