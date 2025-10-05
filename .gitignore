@@ -10,3 +10,13 @@ __pycache__/
 .sbom/
 sbom/
 *.pem
+
+# Test agent output
+agents/**/*.json
+agents/**/*.log
+agents/**/output/
+
+# Script output
+scripts/**/*.json
+scripts/**/*.log
+scripts/**/output/
