@@ -1,0 +1,10 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: weaver-ai-ingress
+  annotations:
+    # GCP GKE Ingress annotations
+    kubernetes.io/ingress.class: gce
+    kubernetes.io/ingress.global-static-ip-name: "weaver-ai-ip"
+    networking.gke.io/managed-certificates: "weaver-ai-cert"
+    kubernetes.io/ingress.allow-http: "false"

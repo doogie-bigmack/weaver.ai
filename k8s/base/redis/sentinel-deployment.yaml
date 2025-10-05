@@ -1,0 +1,119 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-sentinel
+  labels:
+    app: redis-sentinel
+    component: failover
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: redis-sentinel
+  template:
+    metadata:
+      labels:
+        app: redis-sentinel
+        component: failover
+    spec:
+      serviceAccountName: redis
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        fsGroup: 999
+
+      containers:
+      - name: sentinel
+        image: redis:7-alpine
+        imagePullPolicy: IfNotPresent
+
+        command:
+        - redis-sentinel
+        - /etc/redis-sentinel/sentinel.conf
+
+        ports:
+        - name: sentinel
+          containerPort: 26379
+          protocol: TCP
+
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 200m
+            memory: 256Mi
+
+        livenessProbe:
+          tcpSocket:
+            port: sentinel
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+
+        readinessProbe:
+          exec:
+            command:
+            - redis-cli
+            - -p
+            - "26379"
+            - ping
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          capabilities:
+            drop:
+            - ALL
+
+        volumeMounts:
+        - name: sentinel-config
+          mountPath: /etc/redis-sentinel
+        - name: tmp
+          mountPath: /tmp
+
+      volumes:
+      - name: sentinel-config
+        configMap:
+          name: redis-sentinel-config
+      - name: tmp
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-sentinel
+  labels:
+    app: redis-sentinel
+spec:
+  clusterIP: None
+  ports:
+  - port: 26379
+    targetPort: sentinel
+    protocol: TCP
+    name: sentinel
+  selector:
+    app: redis-sentinel
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: redis-sentinel-config
+  labels:
+    app: redis-sentinel
+data:
+  sentinel.conf: |
+    port 26379
+    dir /tmp
+    sentinel monitor mymaster redis-0.redis 6379 2
+    sentinel down-after-milliseconds mymaster 5000
+    sentinel parallel-syncs mymaster 1
+    sentinel failover-timeout mymaster 10000
+    sentinel deny-scripts-reconfig yes
+    logfile ""

@@ -1,0 +1,29 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: weaver-ai-ingress
+  labels:
+    app: weaver-ai-gateway
+  annotations:
+    # Generic annotations (cloud-specific annotations added via overlays)
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - weaver-ai.example.com
+    secretName: weaver-ai-tls
+  rules:
+  - host: weaver-ai.example.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: weaver-gateway
+            port:
+              number: 8000

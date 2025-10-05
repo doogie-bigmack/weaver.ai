@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: weaver-gateway
+  labels:
+    app: weaver-ai-gateway
+    component: api
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8000
+    targetPort: http
+    protocol: TCP
+    name: http
+  selector:
+    app: weaver-ai-gateway
