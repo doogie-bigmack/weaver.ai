@@ -221,7 +221,7 @@ async def test_cache_invalidation(app_with_cache):
 
     # Next request should get fresh data
     response3 = client.get("/fast")
-    data3 = response3.json()
+    assert response3.status_code == 200
 
     # Timestamp should be different (new request)
     # Note: In real scenario, timestamp would differ
@@ -260,7 +260,6 @@ async def test_cache_performance_with_load(app_with_cache):
 async def test_cache_ttl_expiration(app_with_cache):
     """Test cache entries expire based on TTL."""
     app, middleware = app_with_cache
-    client = TestClient(app)
 
     # Create app with short TTL for testing
     app_short = FastAPI()
@@ -268,7 +267,6 @@ async def test_cache_ttl_expiration(app_with_cache):
         enabled=True,
         cache_patterns={"/short": 1},  # 1 second TTL
     )
-    middleware_short = ResponseCacheMiddleware(app_short, cache_config)
     app_short.add_middleware(ResponseCacheMiddleware, config=cache_config)
 
     @app_short.get("/short")
@@ -291,8 +289,8 @@ async def test_cache_ttl_expiration(app_with_cache):
 
     # Should get fresh data after TTL
     response3 = client_short.get("/short")
-    timestamp3 = response3.json()["timestamp"]
-    # Note: In test environment, might need adjustment
+    assert response3.status_code == 200
+    # Note: In test environment, timestamp would differ from cached value
 
 
 @pytest.mark.asyncio
@@ -305,7 +303,6 @@ async def test_cache_error_handling(redis_pool):
         enabled=True,
         cache_patterns={"/test": 60},
     )
-    middleware = ResponseCacheMiddleware(app, cache_config)
     app.add_middleware(ResponseCacheMiddleware, config=cache_config)
 
     @app.get("/test")
