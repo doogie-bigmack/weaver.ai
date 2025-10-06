@@ -85,12 +85,12 @@ async def demo_http_cache():
 
         # First request (cache miss)
         start = time.time()
-        response1 = await client.get(f"{base_url}/health")
+        await client.get(f"{base_url}/health")
         first_latency = (time.time() - start) * 1000
 
         # Second request (cache hit)
         start = time.time()
-        response2 = await client.get(f"{base_url}/health")
+        await client.get(f"{base_url}/health")
         cached_latency = (time.time() - start) * 1000
 
         print(f"  First request (cache miss): {first_latency:.2f}ms")
@@ -215,9 +215,10 @@ async def run_performance_comparison():
     pool_info = stats["pool_info"]
     print("\n  Pool utilization:")
     print(f"    Max connections: {pool_info['max_connections']}")
-    print(
-        f"    Peak usage: {pool_info['in_use_connections']} ({pool_info['in_use_connections'] / pool_info['max_connections'] * 100:.1f}%)"
-    )
+    in_use = pool_info["in_use_connections"]
+    max_conn = pool_info["max_connections"]
+    utilization = in_use / max_conn * 100
+    print(f"    Peak usage: {in_use} ({utilization:.1f}%)")
 
     await close_redis_pool()
     print("\n✓ Performance comparison complete")
@@ -267,7 +268,7 @@ async def main():
         # Cleanup
         try:
             await close_redis_pool()
-        except:
+        except Exception:
             pass
 
 
