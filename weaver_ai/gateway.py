@@ -66,7 +66,6 @@ cache_config = CacheConfig(
         "/metrics": 10,  # Cache metrics for 10 seconds
     },
 )
-_cache_middleware = ResponseCacheMiddleware(app, cache_config)
 app.add_middleware(ResponseCacheMiddleware, config=cache_config)
 
 
@@ -116,14 +115,9 @@ async def metrics() -> dict[str, Any]:
         "status": "healthy",
     }
 
-    # Get cache middleware stats
-    if _cache_middleware:
-        try:
-            cache_stats = _cache_middleware.get_stats()
-            metrics_data["http_cache"] = cache_stats
-        except Exception as e:
-            logger.error(f"Failed to get cache stats: {e}")
-            metrics_data["http_cache"] = {"error": str(e)}
+    # Note: HTTP cache stats are currently not exposed in /metrics
+    # The middleware instance is not directly accessible after app.add_middleware()
+    # Consider using a global stats collector or Redis-based stats in the future
 
     # Get Redis pool stats
     try:
