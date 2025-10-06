@@ -9,7 +9,8 @@ Performance Characteristics:
 - find_capable_agents(): O(C + N) with 2 pipeline batches
 
 Example:
-    >>> redis_client = await redis.from_url("redis://localhost")
+    >>> from weaver_ai.redis.connection_pool import get_redis_pool
+    >>> redis_client = await get_redis_pool()
     >>> registry = RedisAgentRegistry(redis_client)
     >>>
     >>> agent = AgentInfo(

@@ -10,6 +10,8 @@ import time
 import redis.asyncio as redis  # type: ignore[import-untyped]
 from pydantic import BaseModel
 
+from weaver_ai.redis.connection_pool import get_redis_pool
+
 logger = logging.getLogger(__name__)
 
 
@@ -37,7 +39,10 @@ class CacheConfig(BaseModel):
 
 
 class RedisCache:
-    """Redis cache implementation with intelligent TTL and key generation."""
+    """Redis cache implementation with intelligent TTL and key generation.
+
+    Uses the shared Redis connection pool for optimal performance.
+    """
 
     def __init__(self, config: CacheConfig):
         self.config = config
@@ -53,37 +58,32 @@ class RedisCache:
         }
 
     async def connect(self) -> bool:
-        """Connect to Redis server."""
+        """Connect to Redis server using shared connection pool."""
         if self._connected:
             return True
 
         try:
-            self.client = await redis.from_url(
-                f"redis://{self.config.host}:{self.config.port}/{self.config.db}",
-                password=self.config.password,
-                max_connections=self.config.max_connections,
-                socket_timeout=self.config.socket_timeout,
-                socket_connect_timeout=self.config.socket_connect_timeout,
-            )
-
-            # Test connection
-            await self.client.ping()
+            # Use shared connection pool instead of creating new connections
+            self.client = await get_redis_pool()
             self._connected = True
-            logger.info(f"Connected to Redis at {self.config.host}:{self.config.port}")
+            logger.info("Connected to shared Redis connection pool")
             return True
 
         except Exception as e:
-            logger.error(f"Failed to connect to Redis: {e}")
+            logger.error(f"Failed to connect to Redis pool: {e}")
             self.client = None
             self._connected = False
             return False
 
     async def disconnect(self) -> None:
-        """Disconnect from Redis."""
-        if self.client:
-            await self.client.aclose()
-            self._connected = False
-            logger.info("Disconnected from Redis")
+        """Disconnect from Redis (no-op for shared pool).
+
+        The shared pool is managed by the application lifecycle,
+        so we don't close it here.
+        """
+        self._connected = False
+        self.client = None
+        logger.info("Disconnected from Redis pool")
 
     def _generate_key(self, query: str, model: str, **kwargs) -> str:
         """Generate cache key based on query and parameters."""
