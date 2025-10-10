@@ -10,6 +10,7 @@ tests/test_mcp_tool_integration.py
 tests/test_memory_persistence.py
 tests/test_models.py
 tests/test_security_auth.py
+tests/test_security_fixes.py
 tests/test_security_guardrails.py
 tests/test_security_ratelimit.py
 tests/test_security_rbac.py
@@ -17,7 +18,11 @@ tests/test_simple_api.py
 tests/test_workflow.py
 weaver_ai/__init__.py
 weaver_ai/a2a.py
+weaver_ai/a2a_client.py
+weaver_ai/a2a_router.py
 weaver_ai/agent.py
+weaver_ai/config_validator.py
+weaver_ai/crypto_utils.py
 weaver_ai/gateway.py
 weaver_ai/legacy_tools.py
 weaver_ai/main.py

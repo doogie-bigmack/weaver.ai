@@ -1,18 +1,28 @@
 from __future__ import annotations
 
 import logging
+import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from pydantic import ValidationError
 
 from .a2a import A2AEnvelope, check_timestamp, verify
 from .a2a_router import A2ARouter, A2ARoutingError
 from .agent import AgentOrchestrator
 from .mcp import MCPClient
-from .middleware import CacheConfig, ResponseCacheMiddleware
+from .middleware import (
+    CacheConfig,
+    CSRFProtectionMiddleware,
+    ResponseCacheMiddleware,
+    SecurityHeadersMiddleware,
+    get_api_csrf_config,
+    get_api_security_config,
+)
 from .model_router import StubModel
 from .models import Citation, QueryRequest, QueryResponse
 from .redis import RedisEventMesh
@@ -60,9 +70,67 @@ async def lifespan(app: FastAPI):
         logger.error(f"Error closing Redis pool: {e}", exc_info=True)
 
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(
+    title="Weaver AI API",
+    description="Multi-agent orchestration framework with comprehensive security",
+    version="1.0.0",
+    lifespan=lifespan,
+)
 
-# Add response caching middleware
+# ============================================================================
+# SECURITY MIDDLEWARE CONFIGURATION (Order matters - applied in reverse!)
+# ============================================================================
+
+# 1. Security Headers Middleware (applied last, executed first for responses)
+if _settings.security_headers_enabled:
+    security_config = get_api_security_config()
+    # Customize based on settings
+    security_config.hsts_max_age = _settings.hsts_max_age
+    security_config.csp_report_uri = _settings.csp_report_uri
+    app.add_middleware(SecurityHeadersMiddleware, config=security_config)
+    logger.info("Security headers middleware enabled")
+
+# 2. CSRF Protection Middleware
+if _settings.csrf_enabled:
+    csrf_config = get_api_csrf_config(secret_key=_settings.csrf_secret_key)
+    # Add custom exclude paths from settings
+    csrf_config.exclude_paths.update(set(_settings.csrf_exclude_paths))
+    csrf_config.cookie_secure = _settings.csrf_cookie_secure
+    app.add_middleware(CSRFProtectionMiddleware, config=csrf_config)
+    logger.info("CSRF protection middleware enabled")
+
+# 3. CORS Middleware (must be before CSRF to handle preflight requests)
+if _settings.cors_enabled:
+    # Parse allowed origins - if empty, no origins are allowed (secure default)
+    allowed_origins = _settings.cors_origins if _settings.cors_origins else []
+
+    if allowed_origins:
+        logger.info(f"CORS enabled for origins: {allowed_origins}")
+    else:
+        logger.warning(
+            "CORS enabled but no origins specified - all cross-origin requests will be blocked"
+        )
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=allowed_origins,
+        allow_credentials=_settings.cors_allow_credentials,
+        allow_methods=_settings.cors_allow_methods,
+        allow_headers=_settings.cors_allow_headers,
+        max_age=_settings.cors_max_age,  # Preflight cache duration
+        expose_headers=["X-CSRF-Token"],  # Expose CSRF token header to clients
+    )
+
+# 4. Trusted Host Middleware (protect against Host header attacks)
+# Get allowed hosts from environment or use secure defaults
+allowed_hosts = (
+    os.getenv("ALLOWED_HOSTS", "").split(",") if os.getenv("ALLOWED_HOSTS") else None
+)
+if allowed_hosts:
+    app.add_middleware(TrustedHostMiddleware, allowed_hosts=allowed_hosts)
+    logger.info(f"Trusted host middleware enabled for: {allowed_hosts}")
+
+# 5. Response Caching Middleware (performance optimization)
 cache_config = CacheConfig(
     enabled=True,
     cache_patterns={
@@ -76,8 +144,28 @@ app.add_middleware(ResponseCacheMiddleware, config=cache_config)
 
 def get_agent() -> AgentOrchestrator:
     key = "secret"
-    server = create_python_eval_server("srv", key)
-    client = MCPClient(server, key)
+
+    # SECURITY: Only enable Python eval server if explicitly enabled via feature flag
+    # WARNING: Enabling Python eval can lead to remote code execution vulnerabilities
+    if _settings.enable_python_eval:
+        logger.warning(
+            "SECURITY WARNING: Python eval server is ENABLED. "
+            "This poses a significant security risk and should only be used in "
+            "controlled environments. Consider using a safe math expression evaluator instead."
+        )
+        server = create_python_eval_server("srv", key)
+        client = MCPClient(server, key)
+    else:
+        # Use safe math evaluator instead of dangerous Python eval
+        logger.info(
+            "Using SAFE math expression evaluator (Python eval is DISABLED). "
+            "This is the recommended configuration for production environments."
+        )
+        from .tools.safe_math_evaluator import create_safe_math_server
+
+        server = create_safe_math_server("srv", key)
+        client = MCPClient(server, key)
+
     router = StubModel()
     verifier = Verifier()
     return AgentOrchestrator(_settings, router, client, verifier)

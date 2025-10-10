@@ -42,6 +42,33 @@ class AppSettings(BaseSettings):
     a2a_signing_public_key_pem: str | None = None
     mcp_server_public_keys: dict[str, str] = {}
 
+    # SailPoint Integration Settings
+    sailpoint_base_url: str = "http://localhost:8080/identityiq"
+    sailpoint_mcp_host: str = "localhost"
+    sailpoint_mcp_port: int = 3000
+
+    # Feature Flags for Security
+    enable_python_eval: bool = False  # SECURITY: Disabled by default
+
+    # CORS Configuration
+    cors_enabled: bool = True
+    cors_origins: list[str] = []  # Empty list = allow no origins (secure default)
+    cors_allow_credentials: bool = False
+    cors_allow_methods: list[str] = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+    cors_allow_headers: list[str] = ["*"]
+    cors_max_age: int = 600  # Preflight cache in seconds
+
+    # Security Headers Configuration
+    security_headers_enabled: bool = True
+    hsts_max_age: int = 31536000  # 1 year
+    csp_report_uri: str | None = None
+
+    # CSRF Configuration
+    csrf_enabled: bool = True
+    csrf_secret_key: str | None = None
+    csrf_cookie_secure: bool = True
+    csrf_exclude_paths: list[str] = []
+
     def model_post_init(self, __context) -> None:
         """Load keys from files if they appear to be file paths."""
         from pathlib import Path
@@ -67,6 +94,9 @@ class AppSettings(BaseSettings):
     model_config = SettingsConfigDict(
         env_prefix="WEAVER_",
         env_parse_none_str="none",
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
     )
 
     @field_validator("allowed_api_keys", mode="before")
@@ -77,6 +107,44 @@ class AppSettings(BaseSettings):
         if isinstance(v, str):
             # Handle comma-separated values
             return [k.strip() for k in v.split(",") if k.strip()]
+        if isinstance(v, list):
+            return v
+        return []
+
+    @field_validator("cors_origins", mode="before")
+    @classmethod
+    def parse_cors_origins(cls, v):
+        if v is None:
+            return []
+        if isinstance(v, str):
+            # Handle comma-separated values or JSON array
+            if v.startswith("["):
+                import json
+
+                try:
+                    return json.loads(v)
+                except json.JSONDecodeError:
+                    return []
+            return [origin.strip() for origin in v.split(",") if origin.strip()]
+        if isinstance(v, list):
+            return v
+        return []
+
+    @field_validator("csrf_exclude_paths", mode="before")
+    @classmethod
+    def parse_csrf_exclude_paths(cls, v):
+        if v is None:
+            return []
+        if isinstance(v, str):
+            # Handle comma-separated values or JSON array
+            if v.startswith("["):
+                import json
+
+                try:
+                    return json.loads(v)
+                except json.JSONDecodeError:
+                    return []
+            return [path.strip() for path in v.split(",") if path.strip()]
         if isinstance(v, list):
             return v
         return []
