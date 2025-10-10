@@ -102,7 +102,11 @@ class WebSearchTool(Tool):
                         messages=[
                             {
                                 "role": "user",
-                                "content": f"Search the web and provide {max_results} results for: {query}. Format each result as JSON with title, url, and snippet fields.",
+                                "content": (
+                                    f"Search the web and provide {max_results} "
+                                    f"results for: {query}. Format each result "
+                                    "as JSON with title, url, and snippet fields."
+                                ),
                             }
                         ],
                     )
@@ -124,7 +128,7 @@ class WebSearchTool(Tool):
                                 try:
                                     result_data = json.loads(match)
                                     results.append(result_data)
-                                except:
+                                except (json.JSONDecodeError, ValueError, KeyError):
                                     pass
 
                     if results:
