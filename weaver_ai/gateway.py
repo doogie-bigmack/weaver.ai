@@ -8,11 +8,14 @@ from typing import Any
 from fastapi import FastAPI, HTTPException, Request
 from pydantic import ValidationError
 
+from .a2a import A2AEnvelope, check_timestamp, verify
+from .a2a_router import A2ARouter, A2ARoutingError
 from .agent import AgentOrchestrator
 from .mcp import MCPClient
 from .middleware import CacheConfig, ResponseCacheMiddleware
 from .model_router import StubModel
 from .models import Citation, QueryRequest, QueryResponse
+from .redis import RedisEventMesh
 from .redis.connection_pool import (
     RedisPoolConfig,
     close_redis_pool,
@@ -35,9 +38,11 @@ async def lifespan(app: FastAPI):
     """Manage application lifespan: startup and shutdown."""
     # Startup: Initialize Redis connection pool
     try:
+        import os
+
         redis_config = RedisPoolConfig(
-            host="localhost",
-            port=6379,
+            host=os.getenv("REDIS_HOST", "localhost"),
+            port=int(os.getenv("REDIS_PORT", "6379")),
             max_connections=100,  # Shared across all components
         )
         await init_redis_pool(redis_config)
@@ -175,3 +180,153 @@ async def ask(request: Request):
         citations=[Citation(source=c) for c in citations],
         metrics=metrics,
     )
+
+
+# ============================================================================
+# A2A (Agent-to-Agent) Protocol Endpoints
+# ============================================================================
+
+# Initialize A2A router (will be done in lifespan in future)
+_a2a_router: A2ARouter | None = None
+_a2a_mesh: RedisEventMesh | None = None
+
+
+async def get_a2a_router() -> A2ARouter:
+    """Get or create A2A router instance."""
+    global _a2a_router, _a2a_mesh
+
+    if _a2a_router is None:
+        # Initialize Redis event mesh for A2A using configured host/port
+        import os
+
+        redis_host = os.getenv("REDIS_HOST", "localhost")
+        redis_port = os.getenv("REDIS_PORT", "6379")
+        redis_url = f"redis://{redis_host}:{redis_port}"
+
+        _a2a_mesh = RedisEventMesh(redis_url)
+        await _a2a_mesh.connect()
+
+        # Initialize router
+        _a2a_router = A2ARouter(_a2a_mesh)
+        await _a2a_router.start()
+
+    return _a2a_router
+
+
+@app.post("/a2a/message")
+async def receive_a2a_message(envelope: A2AEnvelope):
+    """Receive and route A2A messages from external agents.
+
+    This endpoint:
+    1. Verifies message signature
+    2. Checks timestamp validity
+    3. Routes message to appropriate local agent via Redis
+    4. Waits for agent response
+    5. Returns signed response
+
+    Args:
+        envelope: A2A message envelope
+
+    Returns:
+        Result dictionary or error
+    """
+    try:
+        # 1. Verify timestamp (30 second window)
+        if not check_timestamp(envelope, skew_seconds=30):
+            raise HTTPException(
+                status_code=400,
+                detail="Message timestamp outside acceptable window",
+            )
+
+        # 2. Verify signature
+        # Get sender's public key from settings
+        sender_public_key = _settings.mcp_server_public_keys.get(envelope.sender_id)
+
+        if not sender_public_key:
+            logger.error(f"Unknown sender: {envelope.sender_id}")
+            logger.error(
+                f"Available senders: {list(_settings.mcp_server_public_keys.keys())}"
+            )
+            raise HTTPException(
+                status_code=401,
+                detail=f"Unknown sender: {envelope.sender_id}",
+            )
+
+        logger.info(f"Verifying signature for sender: {envelope.sender_id}")
+        logger.debug(f"Public key (first 50 chars): {sender_public_key[:50]}")
+        sig_preview = envelope.signature[:50] if envelope.signature else "None"
+        logger.debug(f"Signature (first 50 chars): {sig_preview}")
+
+        verification_result = verify(envelope, sender_public_key)
+        logger.info(f"Verification result: {verification_result}")
+
+        if not verification_result:
+            logger.error("Signature verification failed")
+            raise HTTPException(
+                status_code=401,
+                detail="Invalid message signature",
+            )
+
+        # 3. Get router and route message
+        router = await get_a2a_router()
+
+        try:
+            result = await router.route_message(envelope)
+        except A2ARoutingError as e:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Routing failed: {str(e)}",
+            ) from e
+
+        # 4. Return result data directly (A2A client expects just the data)
+        return result
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"A2A message processing failed: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail="Internal server error",
+        ) from None
+
+
+@app.get("/a2a/card")
+async def get_agent_card():
+    """Return agent card describing this agent's capabilities.
+
+    Agent cards enable discovery and capability negotiation.
+
+    Returns:
+        Agent card dictionary
+    """
+    return {
+        "agent_id": "weaver-ai-agent",
+        "name": "Weaver AI Agent",
+        "version": "1.0.0",
+        "description": "Multi-agent orchestration framework with A2A support",
+        "capabilities": [
+            {
+                "name": "translation:en-es",
+                "version": "1.0.0",
+                "description": "English to Spanish translation",
+                "scopes": ["execute"],
+            },
+            {
+                "name": "data:processing",
+                "version": "1.0.0",
+                "description": "Data processing and analysis",
+                "scopes": ["execute"],
+            },
+        ],
+        "endpoints": {
+            "a2a": "/a2a/message",
+            "card": "/a2a/card",
+        },
+        "authentication": {
+            "type": "signature",
+            "algorithm": "RS256",
+            "public_key": _settings.a2a_signing_public_key_pem,
+        },
+        "protocols": ["a2a-v1", "json-rpc-2.0"],
+    }

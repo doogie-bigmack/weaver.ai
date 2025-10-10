@@ -1,0 +1,116 @@
+version: '3.8'
+
+services:
+  # Redis instance for multi-agent communication
+  redis-multiagent:
+    image: redis:7-alpine
+    container_name: redis-multiagent
+    ports:
+      - "6381:6379"
+    command: redis-server --appendonly yes
+    networks:
+      - multiagent-network
+
+  # Search Agent - finds information using MCP tools
+  search-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: search-agent
+    env_file:
+      - .env
+    environment:
+      - PYTHONUNBUFFERED=1
+      - REDIS_HOST=redis-multiagent
+      - REDIS_PORT=6379
+      - WEAVER_MODEL_PROVIDER=${WEAVER_MODEL_PROVIDER:-openai}
+      - WEAVER_MODEL_NAME=${WEAVER_MODEL_NAME:-gpt-4}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    depends_on:
+      - redis-multiagent
+    networks:
+      - multiagent-network
+    command: python3 examples/a2a_search_agent.py --redis redis://redis-multiagent:6379 --port 8002
+    restart: unless-stopped
+
+  # Summarizer Agent - condenses search results
+  summarizer-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: summarizer-agent
+    env_file:
+      - .env
+    environment:
+      - PYTHONUNBUFFERED=1
+      - REDIS_HOST=redis-multiagent
+      - REDIS_PORT=6379
+      - WEAVER_MODEL_PROVIDER=${WEAVER_MODEL_PROVIDER:-openai}
+      - WEAVER_MODEL_NAME=${WEAVER_MODEL_NAME:-gpt-4}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    depends_on:
+      - redis-multiagent
+      - search-agent
+    networks:
+      - multiagent-network
+    command: python3 examples/a2a_summarizer_agent.py --redis redis://redis-multiagent:6379 --port 8003
+    restart: unless-stopped
+
+  # Orchestrator Agent - coordinates the workflow
+  orchestrator-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: orchestrator-agent
+    env_file:
+      - .env
+    environment:
+      - PYTHONUNBUFFERED=1
+      - REDIS_HOST=redis-multiagent
+      - REDIS_PORT=6379
+    depends_on:
+      - redis-multiagent
+      - search-agent
+      - summarizer-agent
+    networks:
+      - multiagent-network
+    command: python3 examples/a2a_orchestrator_agent.py --redis redis://redis-multiagent:6379 --port 8004
+    restart: unless-stopped
+
+  # Gateway with A2A endpoint
+  gateway-multiagent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: gateway-multiagent
+    ports:
+      - "8005:8000"
+    volumes:
+      - ./keys:/app/keys:ro
+    environment:
+      - PYTHONUNBUFFERED=1
+      - REDIS_HOST=redis-multiagent
+      - REDIS_PORT=6379
+      - WEAVER_AUTH_MODE=api_key
+      - WEAVER_ALLOWED_API_KEYS=test_key_multiagent
+      # A2A signing keys
+      - WEAVER_A2A_SIGNING_PRIVATE_KEY_PEM=/app/keys/instance_a_private.pem
+      - WEAVER_A2A_SIGNING_PUBLIC_KEY_PEM=/app/keys/instance_a_public.pem
+      # Accept messages from test client
+      - WEAVER_MCP_SERVER_PUBLIC_KEYS={"test-client":"-----BEGIN PUBLIC KEY-----\\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAnXBxDYIQAxol/71PCxC0\\n3Bidycz39kwg+aeRDUajoz2kb8ihCvY4TS8eM9UqjR1NsbhG6sTLMGY57VO/Q5kX\\npyDO0QebOp+DT9lyWmBCbKcYA9tZUgeGL2gI2pLhmGsjY5Gh98VKdVPn7FW/Njwu\\n2aVvi7oUKomdxhy/JlvT2I4/TU390qcbWs1qfCixPgZiqX4n4PTO9cogxoo2/CQS\\n0OaEt5613AgF8Ex8va1K6f6R+rMjGk+B8cJX53BObn8VS7CzEjZPEskc6L0dFLp0\\nDHditmQS5+l+g2bCSrOcaQWFClfBl5hUBHAa5cXBwmgqB9GUAlyQcammDqkMeEd1\\nswIDAQAB\\n-----END PUBLIC KEY-----\\n"}
+    depends_on:
+      - redis-multiagent
+      - orchestrator-agent
+    networks:
+      - multiagent-network
+    command: uvicorn weaver_ai.gateway:app --host 0.0.0.0 --port 8000
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+networks:
+  multiagent-network:
+    driver: bridge

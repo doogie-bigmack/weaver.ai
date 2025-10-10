@@ -86,9 +86,14 @@ async def run(agent_or_flow: Callable | Flow, input_data: Any, **kwargs) -> Any:
         else:
             event_data = SimpleData(value=input_data)
 
-        # Create event with proper structure
+        # Create event with proper structure - convert BaseModel to dict
         event = Event(
-            data=event_data,
+            event_type=event_data.__class__.__name__,
+            data=(
+                event_data.model_dump()
+                if isinstance(event_data, BaseModel)
+                else event_data
+            ),
             metadata=EventMetadata(event_id="simple_run", source_agent="simple_runner"),
         )
 

@@ -3,9 +3,7 @@
 from __future__ import annotations
 
 import asyncio
-import json
 from collections.abc import Callable
-from datetime import UTC, datetime
 from typing import Any
 from uuid import uuid4
 
@@ -94,10 +92,10 @@ class RedisEventMesh:
         if not metadata:
             metadata = EventMetadata()
 
-        # Create event
+        # Create event - convert BaseModel to dict for serialization
         event = Event(
             event_type=data.__class__.__name__,
-            data=data,
+            data=data.model_dump() if isinstance(data, BaseModel) else data,
             metadata=metadata,
         )
 
@@ -214,7 +212,7 @@ class RedisEventMesh:
     async def publish_task(
         self,
         capability: str,
-        task: BaseModel,
+        task: BaseModel | dict,
         priority: int = 0,
         workflow_id: str | None = None,
     ) -> str:
@@ -222,34 +220,59 @@ class RedisEventMesh:
 
         Args:
             capability: Required capability
-            task: Task data
+            task: Task data (BaseModel or dict)
             priority: Task priority (higher = more important)
             workflow_id: Optional workflow ID for tracking
 
         Returns:
             Task ID
         """
+        from weaver_ai.redis.queue import Task as QueueTask
+
         task_id = uuid4().hex
         channel = f"tasks:{capability.replace(':', '_')}"
 
-        # Add task metadata
-        task_event = {
-            "task_id": task_id,
-            "capability": capability,
-            "priority": priority,
-            "workflow_id": workflow_id,
-            "data": task.model_dump(),
-            "timestamp": datetime.now(UTC).isoformat(),
-        }
+        # Convert task to dict if needed
+        if isinstance(task, dict):
+            task_data = task
+        else:
+            task_data = task.model_dump()
 
-        # Publish to task channel
-        await self.redis.publish(channel, json.dumps(task_event))
+        # Create Event structure for pub/sub
+        from weaver_ai.events import Event, EventMetadata
 
-        # Also add to priority queue
+        event = Event(
+            event_type="Task",
+            data=task_data,
+            metadata=EventMetadata(
+                event_id=task_id,
+                workflow_id=workflow_id,
+                metadata={
+                    "capability": capability,
+                    "priority": priority,
+                },
+            ),
+        )
+
+        # Publish event to task channel (for real-time subscribers)
+        await self.redis.publish(channel, event.model_dump_json())
+
+        # Create proper Task object for queue
+        queue_task = QueueTask(
+            task_id=task_id,
+            capability=capability,
+            data=task_data,
+            priority=priority,
+            workflow_id=workflow_id,
+        )
+
+        # Add Task (not Event) to priority queue
         queue_name = f"queue:{capability.replace(':', '_')}"
         await self.redis.zadd(
             queue_name,
-            {json.dumps(task_event): -priority},  # Negative for high priority first
+            {
+                queue_task.model_dump_json(): -priority
+            },  # Negative for high priority first
         )
 
         return task_id

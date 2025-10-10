@@ -26,3 +26,4 @@ scripts/**/output/
 
 # Test scripts (ad-hoc testing)
 test_*.sh
+keys/

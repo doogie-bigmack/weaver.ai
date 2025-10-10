@@ -9,7 +9,7 @@ from uuid import uuid4
 
 from pydantic import BaseModel, Field
 
-from weaver_ai.events import Event
+from weaver_ai.events import Event, EventMetadata
 from weaver_ai.mcp import MCPClient
 from weaver_ai.memory import AgentMemory, MemoryStrategy
 from weaver_ai.models import ModelRouter
@@ -221,14 +221,16 @@ class BaseAgent(BaseModel):
             task: Task to process
         """
         try:
-            # Create event from task
+            # Create event from task - convert BaseModel to dict
             event = Event(
                 event_type="Task",
-                data=task,
-                metadata={
-                    "task_id": task.task_id,
-                    "workflow_id": task.workflow_id,
-                },
+                data=task.model_dump() if isinstance(task, BaseModel) else task,
+                metadata=EventMetadata(
+                    metadata={
+                        "task_id": task.task_id,
+                        "workflow_id": task.workflow_id,
+                    }
+                ),
             )
 
             # Process
@@ -293,15 +295,39 @@ class BaseAgent(BaseModel):
                 await self.mesh.publish_task(
                     capability=capability,
                     task=result.data,
-                    workflow_id=result.workflow_id
-                    or source_event.metadata.get("workflow_id"),
+                    workflow_id=result.workflow_id or source_event.metadata.workflow_id,
                 )
         else:
-            # Publish to results channel
-            channel = f"results:{self.agent_type}"
+            # Workflow complete - publish to workflow response channel
+            workflow_id = result.workflow_id or source_event.metadata.workflow_id
+
+            # Create metadata with workflow_id for routing
+            result_metadata = EventMetadata(
+                workflow_id=workflow_id,
+                correlation_id=source_event.metadata.correlation_id,
+                parent_event_id=source_event.metadata.event_id,
+            )
+
+            # Publish to workflow-specific response channel for direct subscribers
+            if workflow_id:
+                await self.mesh.publish(
+                    channel=f"workflow:{workflow_id}:response",
+                    data=result,
+                    metadata=result_metadata,
+                )
+
+            # Also publish to agent-type or A2A results channel for routers/monitors
+            if source_event.event_type == "A2ATask":
+                # Publish to A2A results channel for router
+                channel = "a2a_results"
+            else:
+                # Publish to regular results channel
+                channel = f"results:{self.agent_type}"
+
             await self.mesh.publish(
                 channel=channel,
                 data=result,
+                metadata=result_metadata,
             )
 
     async def process(self, event: Event) -> Result:
@@ -397,7 +423,9 @@ class BaseAgent(BaseModel):
                         "args": args,
                         "result": result.data,
                     },
-                    metadata={"tool_execution_time": result.execution_time},
+                    metadata=EventMetadata(
+                        metadata={"tool_execution_time": result.execution_time}
+                    ),
                 )
             )
 
@@ -413,8 +441,8 @@ class BaseAgent(BaseModel):
             True if agent can process
         """
         # Check if event type matches capabilities
-        # event.event_type is a class, so get its name
-        event_type_name = event.event_type.__name__.lower()
+        # event.event_type is now a string
+        event_type_name = event.event_type.lower()
 
         for capability in self.capabilities:
             capability_lower = capability.lower()

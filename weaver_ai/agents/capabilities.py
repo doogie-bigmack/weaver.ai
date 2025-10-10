@@ -82,8 +82,8 @@ class CapabilityMatcher:
         matches = []
 
         for cap in capabilities:
-            # event.event_type is a class, so get its name
-            event_type_name = event.event_type.__name__
+            # event.event_type is now a string
+            event_type_name = event.event_type
             if cap.matches(event_type_name):
                 # Check constraints if any
                 if cap.constraints:
@@ -146,8 +146,8 @@ class CapabilityMatcher:
             score = cap_obj.confidence
 
             # Adjust based on match quality
-            # event.event_type is a class, so get its name
-            event_type_name = event.event_type.__name__
+            # event.event_type is now a string
+            event_type_name = event.event_type
             if cap_obj.matches(event_type_name):
                 # Exact match gets full score (case-insensitive)
                 if cap_obj.name.lower() == event_type_name.lower():

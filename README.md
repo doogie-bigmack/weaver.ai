@@ -1217,6 +1217,240 @@ async def my_endpoint(request: Request):
 
 ---
 
+## 🤝 Multi-Agent A2A Workflows
+
+Weaver AI supports distributed multi-agent systems using the **A2A (Agent-to-Agent) Protocol** for secure agent-to-agent communication over HTTP or Redis.
+
+### Why A2A?
+
+- **Distributed Agents**: Agents can run on different machines/networks
+- **Secure Communication**: RSA-signed messages prevent tampering
+- **Capability-Based Routing**: Automatic routing based on agent capabilities
+- **Cross-Organization**: Connect agents across organizational boundaries
+
+### Quick Start: Multi-Agent Research Workflow
+
+This example demonstrates a **multi-agent research pipeline** with orchestration, web search, and summarization agents.
+
+#### Step 1: Generate A2A Keys
+
+```bash
+# Generate RSA key pairs for secure A2A communication
+python scripts/generate_a2a_keys.py
+
+# Creates keys/ directory with:
+# - instance_a_private.pem (keep secret!)
+# - instance_a_public.pem (share with other agents)
+```
+
+#### Step 2: Start Multi-Agent System
+
+```bash
+# Start all agents (orchestrator, search, summarizer) + Redis + Gateway
+docker-compose -f docker-compose.multi-agent.yml up -d
+
+# Check all services are running
+docker-compose -f docker-compose.multi-agent.yml ps
+
+# View logs
+docker logs orchestrator-agent --tail 20
+docker logs search-agent --tail 20
+docker logs summarizer-agent --tail 20
+```
+
+#### Step 3: Test the Workflow
+
+```bash
+# Test with the A2A client
+python examples/a2a_multiagent_test.py --endpoint http://localhost:8005
+
+# Or test single translation agent
+python examples/a2a_test_client.py --endpoint http://localhost:8001
+```
+
+### Architecture
+
+```
+External Client (signed A2A request)
+    ↓ HTTP POST /a2a/message
+Gateway (signature verification)
+    ↓ Redis Event Mesh
+Orchestrator Agent
+    ↓ Publishes tasks:search
+Search Agent (with MCP web_search tool)
+    ↓ Returns search results → tasks:summarization
+Summarizer Agent (GPT-4)
+    ↓ Returns final summary
+Gateway → Client (signed response)
+```
+
+### Available Example Agents
+
+1. **Orchestrator Agent** (`examples/a2a_orchestrator_agent.py`)
+   - Capability: `orchestration`, `workflow:start`
+   - Coordinates multi-agent workflows
+
+2. **Search Agent** (`examples/a2a_search_agent.py`)
+   - Capability: `search:web`, `search`
+   - Uses MCP `WebSearchTool` with permissions
+   - Falls back to LLM if tool unavailable
+
+3. **Summarizer Agent** (`examples/a2a_summarizer_agent.py`)
+   - Capability: `summarization`, `summarize`
+   - Uses OpenAI GPT-4 for real summarization
+
+4. **Translator Agent** (`examples/a2a_translator_agent.py`)
+   - Capability: `translation:en-es`, `translation`
+   - Simple agent for testing A2A communication
+
+### Security Features
+
+#### RSA Message Signing
+```python
+from weaver_ai.a2a_client import A2AClient
+
+# Initialize client with your private key
+client = A2AClient(
+    sender_id="my-agent",
+    private_key_path="keys/instance_a_private.pem"
+)
+
+# Send signed message
+result = await client.send_a2a_request(
+    endpoint="https://remote-agent.example.com/a2a/message",
+    receiver_id="remote-agent",
+    capability="translation:en-es",
+    payload={"text": "Hello"},
+    budget={"tokens": 1000, "time_ms": 5000, "tool_calls": 1}
+)
+```
+
+#### Signature Verification
+```python
+# Gateway automatically verifies:
+# 1. RSA signature (prevents tampering)
+# 2. Timestamp (30-second window, prevents replay)
+# 3. Sender identity (validates sender_id)
+# 4. Nonce uniqueness (prevents replay attacks)
+```
+
+### Configuration
+
+Add to your `.env`:
+
+```bash
+# A2A Protocol Security
+WEAVER_A2A_SIGNING_PRIVATE_KEY_PEM=/app/keys/instance_a_private.pem
+WEAVER_A2A_SIGNING_PUBLIC_KEY_PEM=/app/keys/instance_a_public.pem
+
+# Registry of trusted agent public keys (JSON format)
+WEAVER_MCP_SERVER_PUBLIC_KEYS={"remote-agent-id": "-----BEGIN PUBLIC KEY-----\n..."}
+
+# Redis for agent communication
+REDIS_HOST=localhost
+REDIS_PORT=6379
+```
+
+### Agent Capabilities
+
+Agents automatically subscribe to Redis channels based on capabilities:
+
+| Capability | Redis Channel | Agent Type |
+|-----------|--------------|------------|
+| `orchestration` | `tasks:orchestration` | Orchestrator |
+| `search`, `search:web` | `tasks:search` | Search Agent |
+| `summarization`, `summarize` | `tasks:summarization` | Summarizer |
+| `translation:en-es` | `tasks:translation` | Translator |
+
+### Building Custom A2A Agents
+
+```python
+from weaver_ai.agents import BaseAgent
+from weaver_ai.events import Event, Result
+
+class MyCustomAgent(BaseAgent):
+    agent_type = "custom_agent"
+    capabilities = ["data_processing", "analysis"]
+
+    async def process(self, event: Event) -> Result:
+        # Your agent logic here
+        data = event.payload.get("data")
+
+        # Process data
+        result = self.analyze_data(data)
+
+        # Return result with next capability
+        return Result(
+            success=True,
+            data={"analysis": result},
+            next_capabilities=["reporting"]  # Route to next agent
+        )
+
+# Start agent
+agent = MyCustomAgent()
+await agent.initialize(redis_url="redis://localhost:6379")
+await agent.start()
+```
+
+### Testing Over the Internet (ngrok)
+
+```bash
+# Expose your gateway to the internet
+ngrok http 8001
+
+# Test from anywhere
+python examples/a2a_test_client.py --endpoint https://abc123.ngrok.io
+```
+
+### MCP Tools with A2A
+
+Agents can use **MCP tools** with proper permission scoping:
+
+```python
+from weaver_ai.tools import ToolExecutionContext
+
+# Agents automatically get tool execution context
+context = ToolExecutionContext(
+    agent_id="search-agent",
+    session_id="workflow-123",
+    user_id="system",
+    scopes=["tool:web_search"]  # Required permission
+)
+
+# Use tool (automatically authorized)
+result = await tool_registry.execute_tool(
+    tool_name="web_search",
+    args={"query": "AI research", "max_results": 3},
+    context=context
+)
+```
+
+### Monitoring A2A Workflows
+
+```bash
+# Check agent health
+curl http://localhost:8005/health
+
+# Get agent capabilities
+curl http://localhost:8005/a2a/card
+
+# Monitor Redis pub/sub
+docker exec -it redis-multiagent redis-cli
+> PSUBSCRIBE tasks:*
+
+# View agent logs
+docker logs search-agent --follow
+```
+
+### Next Steps
+
+- 📖 **Full Tutorial**: See `examples/MULTIAGENT_README.md`
+- 🧪 **Testing Guide**: See `examples/A2A_TESTING_README.md`
+- 🔐 **Security**: See `examples/MULTIAGENT_TEST_GUIDE.md`
+- 🚀 **Deploy**: Use `docker-compose.multi-agent.yml`
+
+---
+
 ## 📚 Advanced Usage
 
 ### Custom Model Integration

@@ -505,8 +505,17 @@ class Workflow:
 
             # Process with error handling
             try:
-                # Create event for agent
-                event = Event(data=current_data)
+                # Create event for agent - convert BaseModel to dict
+                from pydantic import BaseModel
+
+                event = Event(
+                    event_type=current_data.__class__.__name__,
+                    data=(
+                        current_data.model_dump()
+                        if isinstance(current_data, BaseModel)
+                        else current_data
+                    ),
+                )
 
                 # Process with the agent
                 result = await self._process_with_error_handling(
