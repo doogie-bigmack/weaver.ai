@@ -1,0 +1,75 @@
+version: '3.8'
+
+services:
+  # Redis instance for translator agent
+  redis-translator:
+    image: redis:7-alpine
+    container_name: redis-translator
+    ports:
+      - "6380:6379"
+    command: redis-server --appendonly yes
+    networks:
+      - a2a-network
+
+  # Translator Agent (Instance A)
+  # This agent listens for translation requests via Redis
+  translator-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: translator-agent
+    env_file:
+      - .env
+    environment:
+      - PYTHONUNBUFFERED=1
+      - REDIS_HOST=redis-translator
+      - REDIS_PORT=6379
+      # Model configuration - set to your preferred provider
+      - WEAVER_MODEL_PROVIDER=${WEAVER_MODEL_PROVIDER:-openai}
+      - WEAVER_MODEL_NAME=${WEAVER_MODEL_NAME:-gpt-4}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    depends_on:
+      - redis-translator
+    networks:
+      - a2a-network
+    command: python3 examples/a2a_translator_agent.py --redis redis://redis-translator:6379 --port 8001
+    restart: unless-stopped
+
+  # Gateway with A2A endpoint (Instance A)
+  # Exposes HTTP endpoint for receiving A2A messages
+  gateway-translator:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: gateway-translator
+    ports:
+      - "8001:8000"
+    volumes:
+      - ./keys:/app/keys:ro
+    environment:
+      - PYTHONUNBUFFERED=1
+      - REDIS_HOST=redis-translator
+      - REDIS_PORT=6379
+      - WEAVER_AUTH_MODE=api_key
+      - WEAVER_ALLOWED_API_KEYS=test_key_translator
+      # A2A signing keys (gateway uses instance_a keys) - paths will be loaded by settings
+      - WEAVER_A2A_SIGNING_PRIVATE_KEY_PEM=/app/keys/instance_a_private.pem
+      - WEAVER_A2A_SIGNING_PUBLIC_KEY_PEM=/app/keys/instance_a_public.pem
+      # Accept messages from test client (JSON format with sender_id -> public_key_pem)
+      - WEAVER_MCP_SERVER_PUBLIC_KEYS={"test-client":"-----BEGIN PUBLIC KEY-----\\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAnXBxDYIQAxol/71PCxC0\\n3Bidycz39kwg+aeRDUajoz2kb8ihCvY4TS8eM9UqjR1NsbhG6sTLMGY57VO/Q5kX\\npyDO0QebOp+DT9lyWmBCbKcYA9tZUgeGL2gI2pLhmGsjY5Gh98VKdVPn7FW/Njwu\\n2aVvi7oUKomdxhy/JlvT2I4/TU390qcbWs1qfCixPgZiqX4n4PTO9cogxoo2/CQS\\n0OaEt5613AgF8Ex8va1K6f6R+rMjGk+B8cJX53BObn8VS7CzEjZPEskc6L0dFLp0\\nDHditmQS5+l+g2bCSrOcaQWFClfBl5hUBHAa5cXBwmgqB9GUAlyQcammDqkMeEd1\\nswIDAQAB\\n-----END PUBLIC KEY-----\\n"}
+    depends_on:
+      - redis-translator
+      - translator-agent
+    networks:
+      - a2a-network
+    command: uvicorn weaver_ai.gateway:app --host 0.0.0.0 --port 8000
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+networks:
+  a2a-network:
+    driver: bridge

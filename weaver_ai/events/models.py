@@ -9,6 +9,7 @@ This module defines the core data models for the event mesh system:
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from typing import Any
 from uuid import uuid4
 
 from pydantic import BaseModel, Field
@@ -65,7 +66,9 @@ class EventMetadata(BaseModel):
         source_agent: ID of agent that created the event
         parent_event_id: ID of event that triggered this one
         correlation_id: ID to correlate related events
+        workflow_id: Workflow identifier for correlated events
         priority: Event priority (low, normal, high)
+        metadata: Additional metadata as key-value pairs
     """
 
     event_id: str = Field(default_factory=lambda: uuid4().hex)
@@ -73,23 +76,38 @@ class EventMetadata(BaseModel):
     source_agent: str | None = None
     parent_event_id: str | None = None
     correlation_id: str | None = None
+    workflow_id: str | None = None
     priority: str = "normal"
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class Event(BaseModel):
     """Type-safe event wrapper with access control.
 
     Attributes:
-        data: The actual event payload (must be a Pydantic model)
+        event_type: String identifier for the event type
+        data: The actual event payload (as dict for serialization compatibility)
         metadata: Event tracking information
         access_policy: Access control rules
     """
 
-    data: BaseModel
+    event_type: str
+    data: dict[str, Any] | BaseModel
     metadata: EventMetadata = Field(default_factory=EventMetadata)
     access_policy: AccessPolicy = Field(default_factory=AccessPolicy)
 
-    @property
-    def event_type(self) -> type[BaseModel]:
-        """Get the Pydantic model type of the event data."""
-        return type(self.data)
+    def model_dump(self, **kwargs) -> dict[str, Any]:
+        """Override to ensure data is always serialized as dict."""
+        result = super().model_dump(**kwargs)
+        # Convert BaseModel data to dict if needed
+        if isinstance(self.data, BaseModel):
+            result["data"] = self.data.model_dump()
+        return result
+
+    def model_dump_json(self, **kwargs) -> str:
+        """Override to ensure data is always serialized as dict."""
+        # First convert to dict, then to JSON
+        data_dict = self.model_dump(**kwargs)
+        from pydantic import TypeAdapter
+
+        return TypeAdapter(dict[str, Any]).dump_json(data_dict).decode()

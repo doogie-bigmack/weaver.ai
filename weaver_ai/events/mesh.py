@@ -127,9 +127,10 @@ class EventMesh:
         if not isinstance(data, event_type):
             raise TypeError(f"Data must be instance of {event_type.__name__}")
 
-        # Create event with defaults
+        # Create event with defaults - convert BaseModel to dict
         event = Event(
-            data=data,
+            event_type=event_type.__name__,
+            data=data.model_dump() if isinstance(data, BaseModel) else data,
             metadata=metadata or EventMetadata(),
             access_policy=access_policy or AccessPolicy(),
         )

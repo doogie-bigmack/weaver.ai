@@ -50,19 +50,37 @@ def canonical_json(obj: Any) -> bytes:
 
 def sign(envelope: A2AEnvelope, private_key: str) -> str:
     payload = canonical_json(envelope.model_dump(exclude={"signature"}))
-    return jwt.encode({"payload": payload.decode()}, private_key, algorithm="HS256")
+    return jwt.encode({"payload": payload.decode()}, private_key, algorithm="RS256")
 
 
 def verify(envelope: A2AEnvelope, public_key: str) -> bool:
+    import logging
+
+    logger = logging.getLogger(__name__)
+
     if envelope.nonce in _NONCE_STORE:
+        logger.warning(f"Nonce already used: {envelope.nonce}")
         return False
     _NONCE_STORE.add(envelope.nonce)
     try:
-        decoded = jwt.decode(envelope.signature or "", public_key, algorithms=["HS256"])
-    except jwt.PyJWTError:
+        decoded = jwt.decode(envelope.signature or "", public_key, algorithms=["RS256"])
+        logger.debug(f"JWT decode successful, payload keys: {list(decoded.keys())}")
+    except jwt.PyJWTError as e:
+        logger.error(f"JWT decode failed: {type(e).__name__}: {e}")
         return False
     payload = canonical_json(envelope.model_dump(exclude={"signature"})).decode()
-    return decoded.get("payload") == payload
+    decoded_payload = decoded.get("payload")
+    matches = decoded_payload == payload
+    if not matches:
+        logger.error(
+            f"Payload mismatch. Expected length: {len(payload)}, "
+            f"Got length: {len(decoded_payload) if decoded_payload else 0}"
+        )
+        logger.debug(f"Expected (first 100): {payload[:100]}")
+        logger.debug(
+            f"Got (first 100): {decoded_payload[:100] if decoded_payload else 'None'}"
+        )
+    return matches
 
 
 def check_timestamp(envelope: A2AEnvelope, skew_seconds: int = 30) -> bool:

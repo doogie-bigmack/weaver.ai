@@ -30,12 +30,33 @@ class OpenAIAdapter:
             import openai
 
             client = openai.AsyncOpenAI(api_key=self.api_key)
-            response = await client.chat.completions.create(
-                model=self.model,
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=kwargs.get("max_tokens", 150),
-                temperature=kwargs.get("temperature", 0.7),
+
+            # GPT-5 models use max_completion_tokens instead of max_tokens
+            completion_params = {
+                "model": self.model,
+                "messages": [{"role": "user", "content": prompt}],
+            }
+
+            # GPT-5, o-series (o1, o3, o4) models have different parameter requirements
+            is_reasoning_model = (
+                self.model.startswith("gpt-5")
+                or self.model.startswith("o1")
+                or self.model.startswith("o3")
+                or self.model.startswith("o4")
             )
+
+            if is_reasoning_model:
+                # Reasoning models use max_completion_tokens and don't support custom temperature
+                completion_params["max_completion_tokens"] = kwargs.get(
+                    "max_tokens", 150
+                )
+                # Temperature must be 1 (default) for reasoning models
+            else:
+                # Other models use max_tokens and support temperature
+                completion_params["max_tokens"] = kwargs.get("max_tokens", 150)
+                completion_params["temperature"] = kwargs.get("temperature", 0.7)
+
+            response = await client.chat.completions.create(**completion_params)
 
             return ModelResponse(
                 text=response.choices[0].message.content,
