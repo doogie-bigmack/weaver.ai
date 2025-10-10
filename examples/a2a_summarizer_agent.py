@@ -37,9 +37,10 @@ class SummarizerAgent(BaseAgent):
         """
         print("[Summarizer] Received summarization request")
         print(f"[Summarizer] Event type: {event.event_type}")
-        print(
-            f"[Summarizer] Event data keys: {list(event.data.keys()) if isinstance(event.data, dict) else 'not a dict'}"
+        data_keys = (
+            list(event.data.keys()) if isinstance(event.data, dict) else "not a dict"
         )
+        print(f"[Summarizer] Event data keys: {data_keys}")
 
         # Extract search results from event data
         if isinstance(event.data, dict):
@@ -80,10 +81,16 @@ class SummarizerAgent(BaseAgent):
                 print(
                     f"[Summarizer] LLM summarization failed: {e}, falling back to mock"
                 )
-                summary = f"Summary of {len(results)} results about '{query}': [Mock summary - LLM failed]"
+                summary = (
+                    f"Summary of {len(results)} results about '{query}': "
+                    "[Mock summary - LLM failed]"
+                )
         else:
             # Mock summary if no model router or no results
-            summary = f"Summary of {len(results)} results about '{query}': [Mock summary - No LLM available]"
+            summary = (
+                f"Summary of {len(results)} results about '{query}': "
+                "[Mock summary - No LLM available]"
+            )
 
         print(f"[Summarizer] Summary generated ({len(summary)} chars)")
 
