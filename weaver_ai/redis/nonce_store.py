@@ -6,9 +6,9 @@ import asyncio
 import json
 import logging
 import time
-from typing import Optional
 
-import redis.asyncio as redis
+import redis
+import redis.asyncio as aioredis
 from redis.exceptions import RedisError
 
 logger = logging.getLogger(__name__)
@@ -27,7 +27,7 @@ class RedisNonceStore:
 
     def __init__(
         self,
-        redis_client: redis.Redis,
+        redis_client: aioredis.Redis,
         namespace: str = "nonce",
         ttl_seconds: int = 300,  # 5 minutes default
         fallback_to_memory: bool = True,
@@ -292,13 +292,16 @@ class SyncRedisNonceStore:
         self._max_memory_nonces = 10000
 
         # Sync Redis client
-        self._redis_client: Optional[redis.Redis] = None
+        self._redis_client: redis.Redis | None = None
         self._redis_available = True
 
     def _get_redis(self) -> redis.Redis:
-        """Get or create Redis client."""
+        """Get or create synchronous Redis client."""
         if self._redis_client is None:
-            self._redis_client = redis.from_url(self.redis_url, decode_responses=True)
+            # Use synchronous Redis client, not async
+            self._redis_client = redis.Redis.from_url(
+                self.redis_url, decode_responses=True
+            )
         return self._redis_client
 
     def _cleanup_memory_store(self) -> None:

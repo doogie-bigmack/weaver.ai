@@ -441,23 +441,24 @@ class BaseAgent(BaseModel):
             True if agent can process
         """
         # Check if event type matches capabilities
-        # event.event_type is now a string
         event_type_name = event.event_type.lower()
 
         for capability in self.capabilities:
             capability_lower = capability.lower()
-            if ":" in capability_lower:
-                # For action:subject format, match more precisely
-                # Convert TestData -> test:data
-                # This ensures test:data matches TestData but not OtherData
-                action, subject = capability_lower.split(":", 1)
-                # Check if event type name contains both parts
-                # TestData -> testdata should match test:data
-                # OtherData -> otherdata should NOT match test:data
-                expected_name = (action + subject).lower()
-                if event_type_name == expected_name:
-                    return True
-            elif capability_lower in event_type_name:
+
+            # Direct match (handles both "capability" and "action:subject" formats)
+            if event_type_name == capability_lower:
+                return True
+
+            # Handle underscore/colon interchangeability
+            # (_test:data matches _test_data or _testdata)
+            event_normalized = event_type_name.replace("_", "").replace(":", "")
+            cap_normalized = capability_lower.replace("_", "").replace(":", "")
+            if event_normalized == cap_normalized:
+                return True
+
+            # Partial match for broader capabilities
+            if ":" not in capability_lower and capability_lower in event_type_name:
                 return True
 
         return False
