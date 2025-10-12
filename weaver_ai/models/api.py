@@ -34,7 +34,7 @@ class QueryRequest(BaseModel):
                 allow_newlines=True,
             )
         except ValueError as e:
-            raise ValueError(f"Invalid query: {e}")
+            raise ValueError(f"Invalid query: {e}") from e
 
         # Additional checks for SQL injection
         if SecurityValidator.detect_sql_injection(v):

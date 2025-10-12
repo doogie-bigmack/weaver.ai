@@ -188,9 +188,9 @@ class SafeMathEvaluator(BaseModel):
                 raise ValueError(f"Invalid result type: {type(result).__name__}")
 
         except SyntaxError as e:
-            raise ValueError(f"Invalid syntax: {e}")
-        except RecursionError:
-            raise ValueError("Expression too complex (recursion limit exceeded)")
+            raise ValueError(f"Invalid syntax: {e}") from e
+        except RecursionError as e:
+            raise ValueError("Expression too complex (recursion limit exceeded)") from e
 
     def _eval_node(self, node: ast.AST, depth: int) -> Any:
         """Recursively evaluate an AST node.
@@ -258,10 +258,12 @@ class SafeMathEvaluator(BaseModel):
                         isinstance(result, (int, float))
                         and abs(result) > self.MAX_NUMBER_SIZE
                     ):
-                        raise OverflowError(f"Intermediate result too large")
+                        raise OverflowError("Intermediate result too large")
                     return result
-                except OverflowError:
-                    raise OverflowError("Mathematical operation resulted in overflow")
+                except OverflowError as e:
+                    raise OverflowError(
+                        "Mathematical operation resulted in overflow"
+                    ) from e
             else:
                 raise ValueError(f"Unsupported operation: {type(node.op).__name__}")
 
@@ -296,10 +298,10 @@ class SafeMathEvaluator(BaseModel):
                             isinstance(result, (int, float))
                             and abs(result) > self.MAX_NUMBER_SIZE
                         ):
-                            raise OverflowError(f"Function result too large")
+                            raise OverflowError("Function result too large")
                         return result
                     except Exception as e:
-                        raise ValueError(f"Error in function {func_name}: {e}")
+                        raise ValueError(f"Error in function {func_name}: {e}") from e
                 else:
                     raise ValueError(f"Function '{func_name}' is not allowed")
             else:

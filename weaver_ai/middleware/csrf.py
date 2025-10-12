@@ -15,7 +15,7 @@ import hmac
 import logging
 import secrets
 import time
-from typing import Callable, Set
+from typing import Callable
 
 from fastapi import HTTPException, Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -46,9 +46,9 @@ class CSRFConfig:
         token_length: int = 32,  # bytes
         time_limit: int = 3600,  # seconds
         # Safe methods that don't require CSRF token
-        safe_methods: Set[str] | None = None,
+        safe_methods: set[str] | None = None,
         # Paths to exclude from CSRF protection
-        exclude_paths: Set[str] | None = None,
+        exclude_paths: set[str] | None = None,
         # Secret key for HMAC (should be from environment)
         secret_key: str | None = None,
         # Allow token in form data
@@ -347,5 +347,8 @@ def get_api_csrf_config(secret_key: str | None = None) -> CSRFConfig:
         # API-focused: only check headers, not form data
         check_form_data=False,
         # Clear error message for API consumers
-        error_message="CSRF token validation failed. Please include a valid CSRF token in the X-CSRF-Token header.",
+        error_message=(
+            "CSRF token validation failed. Please include a valid CSRF token "
+            "in the X-CSRF-Token header."
+        ),
     )
