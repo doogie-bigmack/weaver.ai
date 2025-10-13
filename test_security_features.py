@@ -117,9 +117,7 @@ def test_csrf_protection():
         response = client.post("/test", json={"data": "test"})
         if response.status_code == 403:
             detail = response.json()["detail"]
-            print(
-                f"  ✓ POST without token rejected: {response.status_code} {detail}"
-            )
+            print(f"  ✓ POST without token rejected: {response.status_code} {detail}")
     except Exception as e:
         # TestClient may raise exception for 403 responses
         if "403" in str(e) and "CSRF" in str(e):
