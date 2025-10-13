@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import re
-import string
 import unicodedata
 from typing import Any
 
@@ -49,7 +48,8 @@ class SecurityValidator:
         r"(\bdrop\b.*\btable\b|\balter\b.*\btable\b)",
         r"(\bexec\b|\bexecute\b)\s*\(",
         r"(--|\#|\/\*|\*\/)",  # SQL comments
-        r"(\bor\b\s+['\"]?\d+['\"]?\s*=\s*['\"]?\d+|\band\b\s+['\"]?\d+['\"]?\s*=\s*['\"]?\d+)",  # OR 1=1 variations
+        # OR 1=1 variations
+        r"(\bor\b\s+['\"]?\d+['\"]?\s*=\s*['\"]?\d+|\band\b\s+['\"]?\d+['\"]?\s*=\s*['\"]?\d+)",
         r"('\s+or\s+'[^']*'\s*=\s*'[^']*')",  # '1'='1' pattern
         r"(\bwaitfor\b\s+\bdelay\b|\bsleep\b\s*\()",
         r"(\bxp_\w+|\bsp_\w+)",  # Extended stored procedures
@@ -189,7 +189,7 @@ class SecurityValidator:
         # Check nesting depth and balance (prevent DoS)
         depth = 0
         max_found_depth = 0
-        for i, char in enumerate(filter_str):
+        for _i, char in enumerate(filter_str):
             if char == "(":
                 depth += 1
                 max_found_depth = max(max_found_depth, depth)

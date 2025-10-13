@@ -178,7 +178,7 @@ class SafeMathEvaluator(BaseModel):
             result = self._eval_node(tree.body, depth=0)
 
             # Validate result
-            if isinstance(result, (int, float)):
+            if isinstance(result, int | float):
                 if abs(result) > self.MAX_RESULT_SIZE:
                     raise OverflowError(
                         f"Result too large (max {self.MAX_RESULT_SIZE})"
@@ -213,7 +213,7 @@ class SafeMathEvaluator(BaseModel):
 
         # Numbers
         if isinstance(node, ast.Constant):
-            if isinstance(node.value, (int, float)):
+            if isinstance(node.value, int | float):
                 if abs(node.value) > self.MAX_NUMBER_SIZE:
                     raise ValueError(f"Number too large (max {self.MAX_NUMBER_SIZE})")
                 return node.value
@@ -246,7 +246,7 @@ class SafeMathEvaluator(BaseModel):
                     )
 
             # Special validation for division
-            if isinstance(node.op, (ast.Div, ast.FloorDiv, ast.Mod)):
+            if isinstance(node.op, ast.Div | ast.FloorDiv | ast.Mod):
                 if right == 0:
                     raise ValueError("Division by zero")
 
@@ -255,7 +255,7 @@ class SafeMathEvaluator(BaseModel):
                 try:
                     result = op_func(left, right)
                     if (
-                        isinstance(result, (int, float))
+                        isinstance(result, int | float)
                         and abs(result) > self.MAX_NUMBER_SIZE
                     ):
                         raise OverflowError("Intermediate result too large")
@@ -295,7 +295,7 @@ class SafeMathEvaluator(BaseModel):
                     try:
                         result = self.ALLOWED_FUNCTIONS[func_name](*args)
                         if (
-                            isinstance(result, (int, float))
+                            isinstance(result, int | float)
                             and abs(result) > self.MAX_NUMBER_SIZE
                         ):
                             raise OverflowError("Function result too large")

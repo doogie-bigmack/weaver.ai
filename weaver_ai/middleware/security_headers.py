@@ -11,9 +11,9 @@ References:
 
 from __future__ import annotations
 
-import json
 import logging
-from typing import Callable, Literal
+from collections.abc import Callable
+from typing import Literal
 
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware

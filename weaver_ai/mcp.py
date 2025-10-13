@@ -37,8 +37,10 @@ class MCPServer:
         Args:
             server_id: Unique server identifier
             private_key: RSA private key (PEM format) for RS256, or shared secret for HS256
-            use_rs256: If True, use RS256 algorithm (recommended), else use HS256 for backward compatibility
-            use_redis_nonces: If True, use Redis for nonce storage (recommended), else use in-memory
+            use_rs256: If True, use RS256 algorithm (recommended),
+                else use HS256 for backward compatibility
+            use_redis_nonces: If True, use Redis for nonce storage (recommended),
+                else use in-memory
         """
         self.server_id = server_id
         self.private_key = private_key
@@ -139,7 +141,8 @@ class MCPClient:
         Args:
             server: MCPServer instance
             public_key: RSA public key (PEM format) for RS256, or shared secret for HS256
-            use_rs256: If True, use RS256 algorithm (recommended), else use HS256 for backward compatibility
+            use_rs256: If True, use RS256 algorithm (recommended),
+                else use HS256 for backward compatibility
         """
         self.server = server
         self.public_key = public_key
