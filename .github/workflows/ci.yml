@@ -116,6 +116,7 @@ jobs:
   integration-test:
     name: Integration Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs: [lint-and-type-check]
 
     services:
