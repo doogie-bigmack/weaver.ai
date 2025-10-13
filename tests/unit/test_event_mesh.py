@@ -118,11 +118,11 @@ class TestEventMesh:
         # Wait for subscriber to complete with timeout
         try:
             await asyncio.wait_for(sub_task, timeout=5.0)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             sub_task.cancel()
             raise AssertionError(
                 f"Subscriber timed out. Received {len(received_events)}/3 events"
-            )
+            ) from None
 
         assert len(received_events) == 3
         assert all(isinstance(e.data, DataEvent) for e in received_events)
@@ -152,11 +152,11 @@ class TestEventMesh:
 
         try:
             await asyncio.wait_for(sub_task, timeout=5.0)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             sub_task.cancel()
             raise AssertionError(
                 f"Subscriber timed out. Received {len(received_events)}/3 events"
-            )
+            ) from None
 
         assert len(received_events) == 3
         assert isinstance(received_events[0].data, DataEvent)
@@ -198,15 +198,14 @@ class TestEventMesh:
 
         # Wait for both to complete with timeout
         try:
-            await asyncio.wait_for(
-                asyncio.gather(sub1_task, sub2_task), timeout=5.0
-            )
-        except asyncio.TimeoutError:
+            await asyncio.wait_for(asyncio.gather(sub1_task, sub2_task), timeout=5.0)
+        except TimeoutError:
             sub1_task.cancel()
             sub2_task.cancel()
             raise AssertionError(
-                f"Subscribers timed out. Sub1: {len(subscriber1_events)}/2, Sub2: {len(subscriber2_events)}/2"
-            )
+                f"Subscribers timed out. Sub1: {len(subscriber1_events)}/2, "
+                f"Sub2: {len(subscriber2_events)}/2"
+            ) from None
 
         assert len(subscriber1_events) == 2
         assert len(subscriber2_events) == 2
@@ -254,16 +253,18 @@ class TestEventMesh:
         # Wait for secret subscriber with timeout
         try:
             await asyncio.wait_for(secret_task, timeout=2.0)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             secret_task.cancel()
-            raise AssertionError("Secret subscriber timed out waiting for event")
+            raise AssertionError(
+                "Secret subscriber timed out waiting for event"
+            ) from None
 
         # Give public subscriber time (it shouldn't receive anything)
         await asyncio.sleep(0.2)
         public_task.cancel()
         try:
             await asyncio.wait_for(public_task, timeout=1.0)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             pass
 
         assert len(secret_events) == 1
@@ -310,16 +311,18 @@ class TestEventMesh:
         # Wait for admin subscriber with timeout
         try:
             await asyncio.wait_for(admin_task, timeout=2.0)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             admin_task.cancel()
-            raise AssertionError("Admin subscriber timed out waiting for event")
+            raise AssertionError(
+                "Admin subscriber timed out waiting for event"
+            ) from None
 
         # Give user subscriber time (it shouldn't receive anything)
         await asyncio.sleep(0.2)
         user_task.cancel()
         try:
             await asyncio.wait_for(user_task, timeout=1.0)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             pass
 
         assert len(admin_events) == 1
