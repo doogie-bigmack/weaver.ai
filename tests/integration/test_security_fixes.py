@@ -187,7 +187,7 @@ class TestEnhancedInputValidation:
         # Unicode spoofing should be rejected
         with pytest.raises(ValueError, match="Unicode spoofing"):
             QueryRequest(
-                user_id="user123", query="Hello\u200BWorld"  # Zero-width space
+                user_id="user123", query="Hello\u200bWorld"  # Zero-width space
             )
 
     def test_query_request_control_character_filtering(self):

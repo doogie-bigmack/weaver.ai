@@ -237,13 +237,13 @@ class TestUnicodeSpoofingDetection:
     def test_detect_zero_width_characters(self):
         """Test detection of zero-width characters."""
         # Zero-width space (U+200B)
-        assert SecurityValidator.detect_unicode_spoofing("test\u200Bdata") is True
+        assert SecurityValidator.detect_unicode_spoofing("test\u200bdata") is True
 
         # Zero-width joiner (U+200D)
-        assert SecurityValidator.detect_unicode_spoofing("test\u200Ddata") is True
+        assert SecurityValidator.detect_unicode_spoofing("test\u200ddata") is True
 
         # Right-to-left override (U+202E)
-        assert SecurityValidator.detect_unicode_spoofing("test\u202Edata") is True
+        assert SecurityValidator.detect_unicode_spoofing("test\u202edata") is True
 
     def test_detect_mixed_scripts(self):
         """Test detection of mixed script attacks."""
@@ -278,7 +278,7 @@ class TestComprehensiveInputSanitization:
     def test_reject_unicode_spoofing(self):
         """Test rejection of Unicode spoofing in general input."""
         with pytest.raises(ValueError, match="Unicode spoofing"):
-            SecurityValidator.sanitize_user_input("test\u200Bdata")
+            SecurityValidator.sanitize_user_input("test\u200bdata")
 
     def test_html_removal(self):
         """Test HTML tag removal when not allowed."""
