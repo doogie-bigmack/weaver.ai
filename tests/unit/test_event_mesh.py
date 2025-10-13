@@ -91,10 +91,13 @@ class TestEventMesh:
         received_events = []
 
         async def subscriber():
-            async for event in mesh.subscribe([DataEvent]):
-                received_events.append(event)
-                if len(received_events) >= 3:
-                    break
+            try:
+                async for event in mesh.subscribe([DataEvent]):
+                    received_events.append(event)
+                    if len(received_events) >= 3:
+                        break
+            except asyncio.CancelledError:
+                pass
 
         # Start subscriber
         sub_task = asyncio.create_task(subscriber())
@@ -112,8 +115,14 @@ class TestEventMesh:
         # Publish another matching event
         await mesh.publish(DataEvent, DataEvent(message="3", value=3))
 
-        # Wait for subscriber to complete
-        await sub_task
+        # Wait for subscriber to complete with timeout
+        try:
+            await asyncio.wait_for(sub_task, timeout=5.0)
+        except asyncio.TimeoutError:
+            sub_task.cancel()
+            raise AssertionError(
+                f"Subscriber timed out. Received {len(received_events)}/3 events"
+            )
 
         assert len(received_events) == 3
         assert all(isinstance(e.data, DataEvent) for e in received_events)
@@ -125,10 +134,13 @@ class TestEventMesh:
         received_events = []
 
         async def subscriber():
-            async for event in mesh.subscribe([DataEvent, AnotherTestEvent]):
-                received_events.append(event)
-                if len(received_events) >= 3:
-                    break
+            try:
+                async for event in mesh.subscribe([DataEvent, AnotherTestEvent]):
+                    received_events.append(event)
+                    if len(received_events) >= 3:
+                        break
+            except asyncio.CancelledError:
+                pass
 
         sub_task = asyncio.create_task(subscriber())
         await asyncio.sleep(0.1)
@@ -138,7 +150,13 @@ class TestEventMesh:
         await mesh.publish(AnotherTestEvent, AnotherTestEvent(data="another"))
         await mesh.publish(DataEvent, DataEvent(message="test2", value=2))
 
-        await sub_task
+        try:
+            await asyncio.wait_for(sub_task, timeout=5.0)
+        except asyncio.TimeoutError:
+            sub_task.cancel()
+            raise AssertionError(
+                f"Subscriber timed out. Received {len(received_events)}/3 events"
+            )
 
         assert len(received_events) == 3
         assert isinstance(received_events[0].data, DataEvent)
@@ -152,16 +170,22 @@ class TestEventMesh:
         subscriber2_events = []
 
         async def subscriber1():
-            async for event in mesh.subscribe([DataEvent], agent_id="sub1"):
-                subscriber1_events.append(event)
-                if len(subscriber1_events) >= 2:
-                    break
+            try:
+                async for event in mesh.subscribe([DataEvent], agent_id="sub1"):
+                    subscriber1_events.append(event)
+                    if len(subscriber1_events) >= 2:
+                        break
+            except asyncio.CancelledError:
+                pass
 
         async def subscriber2():
-            async for event in mesh.subscribe([DataEvent], agent_id="sub2"):
-                subscriber2_events.append(event)
-                if len(subscriber2_events) >= 2:
-                    break
+            try:
+                async for event in mesh.subscribe([DataEvent], agent_id="sub2"):
+                    subscriber2_events.append(event)
+                    if len(subscriber2_events) >= 2:
+                        break
+            except asyncio.CancelledError:
+                pass
 
         # Start both subscribers
         sub1_task = asyncio.create_task(subscriber1())
@@ -172,8 +196,17 @@ class TestEventMesh:
         await mesh.publish(DataEvent, DataEvent(message="broadcast", value=1))
         await mesh.publish(DataEvent, DataEvent(message="broadcast", value=2))
 
-        # Wait for both to complete
-        await asyncio.gather(sub1_task, sub2_task)
+        # Wait for both to complete with timeout
+        try:
+            await asyncio.wait_for(
+                asyncio.gather(sub1_task, sub2_task), timeout=5.0
+            )
+        except asyncio.TimeoutError:
+            sub1_task.cancel()
+            sub2_task.cancel()
+            raise AssertionError(
+                f"Subscribers timed out. Sub1: {len(subscriber1_events)}/2, Sub2: {len(subscriber2_events)}/2"
+            )
 
         assert len(subscriber1_events) == 2
         assert len(subscriber2_events) == 2
@@ -187,18 +220,24 @@ class TestEventMesh:
         secret_events = []
 
         async def public_subscriber():
-            async for event in mesh.subscribe(
-                [SecretEvent], agent_id="public_agent", agent_level="public"
-            ):
-                public_events.append(event)
+            try:
+                async for event in mesh.subscribe(
+                    [SecretEvent], agent_id="public_agent", agent_level="public"
+                ):
+                    public_events.append(event)
+            except asyncio.CancelledError:
+                pass
 
         async def secret_subscriber():
-            async for event in mesh.subscribe(
-                [SecretEvent], agent_id="secret_agent", agent_level="secret"
-            ):
-                secret_events.append(event)
-                if len(secret_events) >= 1:
-                    break
+            try:
+                async for event in mesh.subscribe(
+                    [SecretEvent], agent_id="secret_agent", agent_level="secret"
+                ):
+                    secret_events.append(event)
+                    if len(secret_events) >= 1:
+                        break
+            except asyncio.CancelledError:
+                pass
 
         # Start subscribers
         public_task = asyncio.create_task(public_subscriber())
@@ -212,12 +251,20 @@ class TestEventMesh:
             access_policy=AccessPolicy(min_level="secret"),
         )
 
-        # Wait for secret subscriber
-        await secret_task
+        # Wait for secret subscriber with timeout
+        try:
+            await asyncio.wait_for(secret_task, timeout=2.0)
+        except asyncio.TimeoutError:
+            secret_task.cancel()
+            raise AssertionError("Secret subscriber timed out waiting for event")
 
         # Give public subscriber time (it shouldn't receive anything)
         await asyncio.sleep(0.2)
         public_task.cancel()
+        try:
+            await asyncio.wait_for(public_task, timeout=1.0)
+        except asyncio.TimeoutError:
+            pass
 
         assert len(secret_events) == 1
         assert len(public_events) == 0
@@ -229,18 +276,24 @@ class TestEventMesh:
         user_events = []
 
         async def admin_subscriber():
-            async for event in mesh.subscribe(
-                [DataEvent], agent_roles=["admin"], agent_id="admin"
-            ):
-                admin_events.append(event)
-                if len(admin_events) >= 1:
-                    break
+            try:
+                async for event in mesh.subscribe(
+                    [DataEvent], agent_roles=["admin"], agent_id="admin"
+                ):
+                    admin_events.append(event)
+                    if len(admin_events) >= 1:
+                        break
+            except asyncio.CancelledError:
+                pass
 
         async def user_subscriber():
-            async for event in mesh.subscribe(
-                [DataEvent], agent_roles=["user"], agent_id="user"
-            ):
-                user_events.append(event)
+            try:
+                async for event in mesh.subscribe(
+                    [DataEvent], agent_roles=["user"], agent_id="user"
+                ):
+                    user_events.append(event)
+            except asyncio.CancelledError:
+                pass
 
         # Start subscribers
         admin_task = asyncio.create_task(admin_subscriber())
@@ -254,9 +307,20 @@ class TestEventMesh:
             access_policy=AccessPolicy(allowed_roles=["admin"]),
         )
 
-        await admin_task
+        # Wait for admin subscriber with timeout
+        try:
+            await asyncio.wait_for(admin_task, timeout=2.0)
+        except asyncio.TimeoutError:
+            admin_task.cancel()
+            raise AssertionError("Admin subscriber timed out waiting for event")
+
+        # Give user subscriber time (it shouldn't receive anything)
         await asyncio.sleep(0.2)
         user_task.cancel()
+        try:
+            await asyncio.wait_for(user_task, timeout=1.0)
+        except asyncio.TimeoutError:
+            pass
 
         assert len(admin_events) == 1
         assert len(user_events) == 0
