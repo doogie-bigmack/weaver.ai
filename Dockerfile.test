@@ -12,6 +12,7 @@ RUN pip install --no-cache-dir \
     pydantic-settings \
     pyyaml \
     pyjwt \
+    cryptography \
     pytest \
     pytest-asyncio \
     pytest-timeout \
