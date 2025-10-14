@@ -8,6 +8,7 @@ from typing import Any
 
 import httpx
 
+from ...settings import AppSettings
 from ..base import Tool, ToolCapability, ToolExecutionContext, ToolResult
 
 
@@ -22,10 +23,19 @@ class SailPointIIQTool(Tool):
     ]
     required_scopes: list[str] = ["tool:sailpoint"]
 
-    # SailPoint configuration from claude_desktop_config.json
-    sailpoint_url: str = "http://10.201.224.8:8080/identityiq"
+    # Instance variables for configuration (loaded from settings)
+    sailpoint_url: str = ""
     mcp_server_port: int = 3000
     mcp_server_host: str = "localhost"
+
+    def __init__(self, **data):
+        """Initialize SailPoint tool with configuration from settings."""
+        super().__init__(**data)
+        settings = AppSettings()
+        # Load configuration from environment variables instead of hardcoding
+        self.sailpoint_url = settings.sailpoint_base_url
+        self.mcp_server_port = settings.sailpoint_mcp_port
+        self.mcp_server_host = settings.sailpoint_mcp_host
 
     input_schema: dict[str, Any] = {
         "type": "object",
@@ -233,9 +243,21 @@ class SailPointIIQTool(Tool):
         Returns:
             List of users
         """
+        from weaver_ai.security.validation import SecurityValidator
+
         limit = query.get("limit", 10)
         offset = query.get("offset", 0)
         filter_str = query.get("filter", "")
+
+        # Validate and sanitize filter to prevent LDAP injection
+        if filter_str:
+            try:
+                filter_str = SecurityValidator.validate_ldap_filter(filter_str)
+            except ValueError as e:
+                return {
+                    "success": False,
+                    "error": f"Invalid LDAP filter: {e}",
+                }
 
         print(f"\n[SailPoint IIQ] Listing users (limit={limit}, offset={offset})")
 
@@ -325,9 +347,21 @@ class SailPointIIQTool(Tool):
         Returns:
             List of roles
         """
+        from weaver_ai.security.validation import SecurityValidator
+
         limit = query.get("limit", 10)
         offset = query.get("offset", 0)
         filter_str = query.get("filter", "")
+
+        # Validate and sanitize filter to prevent LDAP injection
+        if filter_str:
+            try:
+                filter_str = SecurityValidator.validate_ldap_filter(filter_str)
+            except ValueError as e:
+                return {
+                    "success": False,
+                    "error": f"Invalid LDAP filter: {e}",
+                }
 
         print(f"\n[SailPoint IIQ] Listing roles (limit={limit}, offset={offset})")
 
@@ -417,8 +451,16 @@ class SailPointIIQTool(Tool):
         Returns:
             User details
         """
+        from weaver_ai.security.validation import SecurityValidator
+
         if not user_id:
             return {"success": False, "error": "User ID is required"}
+
+        # Sanitize user_id to prevent injection
+        try:
+            user_id = SecurityValidator.sanitize_identity_name(user_id)
+        except ValueError as e:
+            return {"success": False, "error": f"Invalid user ID: {e}"}
 
         print(f"\n[SailPoint IIQ] Getting user: {user_id}")
 
@@ -451,8 +493,16 @@ class SailPointIIQTool(Tool):
         Returns:
             Role details
         """
+        from weaver_ai.security.validation import SecurityValidator
+
         if not role_id:
             return {"success": False, "error": "Role ID is required"}
+
+        # Sanitize role_id to prevent injection
+        try:
+            role_id = SecurityValidator.sanitize_identity_name(role_id)
+        except ValueError as e:
+            return {"success": False, "error": f"Invalid role ID: {e}"}
 
         print(f"\n[SailPoint IIQ] Getting role: {role_id}")
 

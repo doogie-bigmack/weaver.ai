@@ -20,17 +20,29 @@ class QueryRequest(BaseModel):
     @classmethod
     def validate_query(cls, v: str) -> str:
         """Validate query input for security."""
+        from weaver_ai.security.validation import SecurityValidator
+
         if not v or not v.strip():
             raise ValueError("Query cannot be empty")
 
-        # Check for null bytes and control characters
-        if "\x00" in v:
-            raise ValueError("Null bytes not allowed in query")
+        # Use comprehensive input validation
+        try:
+            v = SecurityValidator.sanitize_user_input(
+                v,
+                max_length=10000,
+                allow_html=False,
+                allow_newlines=True,
+            )
+        except ValueError as e:
+            raise ValueError(f"Invalid query: {e}") from e
 
-        # Check for other control characters (except newline and tab)
-        control_chars = [chr(i) for i in range(32) if i not in (9, 10, 13)]
-        if any(char in v for char in control_chars):
-            raise ValueError("Control characters not allowed in query")
+        # Additional checks for SQL injection
+        if SecurityValidator.detect_sql_injection(v):
+            raise ValueError("Potential SQL injection detected in query")
+
+        # Check for Unicode spoofing
+        if SecurityValidator.detect_unicode_spoofing(v):
+            raise ValueError("Unicode spoofing characters detected in query")
 
         return v
 

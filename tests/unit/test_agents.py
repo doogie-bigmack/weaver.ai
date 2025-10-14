@@ -63,6 +63,7 @@ class TestBaseAgent:
     async def test_can_process(self, base_agent):
         """Test capability matching."""
         event = Event(
+            event_type="_test:data",
             data=_TestData(value="test", number=42),
         )
 
@@ -75,6 +76,7 @@ class TestBaseAgent:
             value: str
 
         event2 = Event(
+            event_type="other:data",
             data=OtherData(value="other"),
         )
         assert not await base_agent.can_process(event2)
@@ -83,6 +85,7 @@ class TestBaseAgent:
     async def test_process_not_implemented(self, base_agent):
         """Test that process raises NotImplementedError."""
         event = Event(
+            event_type="_test:data",
             data=_TestData(value="test", number=42),
         )
 
@@ -171,6 +174,7 @@ class TestCapabilities:
             test: str
 
         event = Event(
+            event_type="analyzedata",
             data=AnalyzeData(test="data"),
         )
 
@@ -247,6 +251,7 @@ class TestAgentIntegration:
             test: str
 
         event = Event(
+            event_type="custom:process",
             data=CustomData(test="value"),
         )
 

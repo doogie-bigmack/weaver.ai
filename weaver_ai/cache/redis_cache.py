@@ -86,14 +86,27 @@ class RedisCache:
         logger.info("Disconnected from Redis pool")
 
     def _generate_key(self, query: str, model: str, **kwargs) -> str:
-        """Generate cache key based on query and parameters."""
+        """Generate cache key based on query and parameters.
+
+        Sanitizes model name to prevent Redis injection attacks.
+        """
+        from weaver_ai.security.validation import SecurityValidator
+
+        # Validate and sanitize model name
+        try:
+            safe_model = SecurityValidator.validate_model_name(model)
+        except ValueError as e:
+            logger.warning(f"Invalid model name for cache key: {e}")
+            # Use a safe default if validation fails
+            safe_model = "unknown"
+
         # Create a deterministic key from query and parameters
-        key_parts = [query, model, json.dumps(kwargs, sort_keys=True)]
+        key_parts = [query, safe_model, json.dumps(kwargs, sort_keys=True)]
 
         key_str = "|".join(key_parts)
         key_hash = hashlib.md5(key_str.encode()).hexdigest()
 
-        return f"{self.config.prefix}{model}:{key_hash}"
+        return f"{self.config.prefix}{safe_model}:{key_hash}"
 
     def _determine_ttl(self, query: str) -> int:
         """Determine TTL based on query type."""
