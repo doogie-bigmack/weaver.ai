@@ -378,7 +378,19 @@ class SyncRedisNonceStore:
                     logger.warning(f"Nonce replay detected in memory (sync): {nonce}")
                     return False
 
+                # Add nonce with timestamp
                 self._memory_store[nonce] = time.time()
+
+                # Enforce size limit after adding (to match async behavior)
+                if len(self._memory_store) > self._max_memory_nonces:
+                    sorted_nonces = sorted(
+                        self._memory_store.items(), key=lambda x: x[1]
+                    )
+                    for old_nonce, _ in sorted_nonces[
+                        : len(sorted_nonces) - self._max_memory_nonces
+                    ]:
+                        del self._memory_store[old_nonce]
+
                 logger.debug(
                     f"Nonce {nonce} added to memory store (sync, Redis unavailable)"
                 )
