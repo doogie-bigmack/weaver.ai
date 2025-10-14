@@ -1,4 +1,4 @@
-FROM python:3.14-slim
+FROM python:3.12-slim
 
 WORKDIR /app
 
@@ -28,5 +28,5 @@ COPY scripts/ scripts/
 COPY examples/ examples/
 COPY models.yaml .
 
-# Run tests with timeout to prevent hanging
-CMD ["python", "-m", "pytest", "tests/unit/test_event_mesh.py", "-v", "-s", "--timeout=60"]
+# Run all unit tests with timeout to prevent hanging
+CMD ["python", "-m", "pytest", "tests/unit/", "-v", "-s", "--timeout=60"]
