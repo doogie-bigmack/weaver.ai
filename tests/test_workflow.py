@@ -111,6 +111,9 @@ class TestWorkflow:
                     result = await workflow.run(input_data)
 
         assert isinstance(result, WorkflowResult)
+        # Debug: print error if failed
+        if result.state == WorkflowState.FAILED:
+            print(f"Workflow failed with error: {result.error}")
         assert result.state == WorkflowState.COMPLETED
         assert isinstance(result.result, ProcessedData | FinalResult)
 

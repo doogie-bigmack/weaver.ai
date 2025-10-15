@@ -15,7 +15,8 @@ def _agent() -> AgentOrchestrator:
     settings = AppSettings()
     key = "k"
     server = create_python_eval_server("srv", key)
-    client = MCPClient(server, key)
+    # Use HS256 (symmetric key) to match server, not RS256
+    client = MCPClient(server, key, use_rs256=False)
     router = StubModel()
     return AgentOrchestrator(settings, router, client, Verifier())
 

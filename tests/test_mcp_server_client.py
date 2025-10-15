@@ -9,7 +9,8 @@ from weaver_ai.tools import create_python_eval_server
 def test_mcp_roundtrip():
     key = "k"
     server = create_python_eval_server("srv", key)
-    client = MCPClient(server, key)
+    # Use HS256 (symmetric key) to match server, not RS256
+    client = MCPClient(server, key, use_rs256=False)
     result = client.call("python_eval", {"expr": "1+1"})
     assert result["result"] == 2
 

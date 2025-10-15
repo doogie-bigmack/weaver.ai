@@ -639,3 +639,21 @@ class AgentMemory:
 
         await self.remember(key, value, memory_type=item_type, importance=importance)
         return True
+
+    async def search(
+        self,
+        query: str | None = None,
+        memory_types: list[str] | None = None,
+        limit: int = 10,
+    ) -> list[MemoryItem]:
+        """Search memories (alias for recall for compatibility).
+
+        Args:
+            query: Search query (None = get all)
+            memory_types: Memory types to search (None = all)
+            limit: Maximum results
+
+        Returns:
+            List of memory items
+        """
+        return await self.recall(query=query, memory_types=memory_types, limit=limit)
