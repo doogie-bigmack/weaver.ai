@@ -67,7 +67,7 @@ jobs:
 
       - name: Run unit tests with coverage
         run: |
-          pytest tests/ -v --ignore=tests/integration --cov=weaver_ai --cov-report=term-missing --cov-report=xml --cov-report=html --junitxml=junit.xml --timeout=60
+          pytest tests/ -v --ignore=tests/integration --ignore=tests/performance --cov=weaver_ai --cov-report=term-missing --cov-report=xml --cov-report=html --junitxml=junit.xml --timeout=60
 
       - name: Upload coverage reports
         if: matrix.python-version == '3.12'
@@ -157,6 +157,10 @@ jobs:
       - name: Run other integration tests
         run: |
           pytest tests/integration/ --ignore=tests/integration/test_redis_registry_integration.py -v --tb=short --timeout=120
+
+      - name: Run performance tests (require Redis)
+        run: |
+          pytest tests/performance/ -v --tb=short --timeout=120
 
       - name: Test API endpoints
         run: |
