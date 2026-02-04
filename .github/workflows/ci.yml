@@ -74,7 +74,7 @@ jobs:
 
       - name: Upload coverage reports
         if: matrix.python-version == '3.12'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: coverage-report
           path: |
@@ -83,7 +83,7 @@ jobs:
 
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: test-results-${{ matrix.python-version }}
           path: junit.xml
@@ -255,7 +255,7 @@ jobs:
           bandit -r weaver_ai -f json -o bandit-report.json || true
 
       - name: Upload security reports
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: security-reports
           path: |
