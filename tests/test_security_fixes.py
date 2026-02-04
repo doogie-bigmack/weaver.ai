@@ -63,8 +63,9 @@ class TestJWTRS256Migration:
             jwt.decode(token, public_key, algorithms=["HS256"])
 
         # Try to create HS256 token with public key and verify as RS256 (attack)
-        fake_token = jwt.encode(payload, public_key, algorithm="HS256")
-        with pytest.raises(jwt.InvalidSignatureError):
+        # Modern PyJWT correctly rejects using RSA keys for HMAC
+        with pytest.raises((jwt.InvalidKeyError, jwt.InvalidSignatureError)):
+            fake_token = jwt.encode(payload, public_key, algorithm="HS256")
             jwt.decode(fake_token, public_key, algorithms=["RS256"])
 
     def test_mcp_with_rs256(self):

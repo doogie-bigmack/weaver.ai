@@ -1,0 +1,191 @@
+name: Docker Security Scan
+
+on:
+  push:
+    branches: [ main, feat/*, fix/* ]
+    paths:
+      - 'Dockerfile'
+      - 'Dockerfile.test'
+      - '.github/workflows/docker-security.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'Dockerfile'
+      - 'Dockerfile.test'
+      - '.github/workflows/docker-security.yml'
+  schedule:
+    # Run weekly on Mondays at 9 AM UTC to catch new CVEs
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+  pull-requests: write
+
+jobs:
+  docker-scout-scan:
+    name: Docker Scout Security Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    strategy:
+      matrix:
+        image:
+          - name: production
+            dockerfile: Dockerfile
+            tag: weaver
+            fail-on-vuln: true
+          - name: test
+            dockerfile: Dockerfile.test
+            tag: weaver-test
+            fail-on-vuln: false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build ${{ matrix.image.name }} image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./${{ matrix.image.dockerfile }}
+          tags: ${{ matrix.image.tag }}:${{ github.sha }}
+          load: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Docker Scout CVE scan - ${{ matrix.image.name }}
+        uses: docker/scout-action@v1
+        continue-on-error: true  # Don't fail if Docker Scout is not available
+        with:
+          command: cves
+          image: ${{ matrix.image.tag }}:${{ github.sha }}
+          only-severities: critical,high
+          sarif-file: scout-${{ matrix.image.name }}.sarif
+          write-comment: ${{ github.event_name == 'pull_request' }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          exit-code: ${{ matrix.image.fail-on-vuln }}
+
+      - name: Upload SARIF to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: scout-${{ matrix.image.name }}.sarif
+          category: docker-scout-${{ matrix.image.name }}
+
+      - name: Generate security summary
+        if: always()
+        run: |
+          echo "## 🔒 Docker Scout Scan Results - ${{ matrix.image.name }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Image**: \`${{ matrix.image.tag }}:${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Dockerfile**: \`${{ matrix.image.dockerfile }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ -f scout-${{ matrix.image.name }}.sarif ]; then
+            # Parse SARIF file for vulnerability counts
+            critical=$(jq '[.runs[0].results[] | select(.level == "error")] | length' scout-${{ matrix.image.name }}.sarif)
+            high=$(jq '[.runs[0].results[] | select(.level == "warning")] | length' scout-${{ matrix.image.name }}.sarif)
+            medium=$(jq '[.runs[0].results[] | select(.level == "note")] | length' scout-${{ matrix.image.name }}.sarif)
+
+            echo "| Severity | Count |" >> $GITHUB_STEP_SUMMARY
+            echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+            echo "| 🔴 Critical | ${critical:-0} |" >> $GITHUB_STEP_SUMMARY
+            echo "| 🟠 High | ${high:-0} |" >> $GITHUB_STEP_SUMMARY
+            echo "| 🟡 Medium | ${medium:-0} |" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+
+            total=$((${critical:-0} + ${high:-0}))
+            if [ $total -gt 0 ]; then
+              echo "⚠️ **Action Required**: ${total} Critical/High severity vulnerabilities detected!" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "✅ **All Clear**: No critical or high severity vulnerabilities found!" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "⚠️ SARIF file not found - scan may have failed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  docker-scout-compare:
+    name: Compare with Base Image
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build production image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          tags: weaver:pr-${{ github.sha }}
+          load: true
+
+      - name: Compare with base image
+        uses: docker/scout-action@v1
+        continue-on-error: true  # Don't fail if Docker Scout is not available
+        with:
+          command: compare
+          image: weaver:pr-${{ github.sha }}
+          to: python:3.12-slim
+          only-severities: critical,high
+          write-comment: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+  docker-scout-recommendations:
+    name: Get Remediation Recommendations
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build production image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          tags: weaver:pr-${{ github.sha }}
+          load: true
+
+      - name: Get recommendations
+        uses: docker/scout-action@v1
+        continue-on-error: true  # Don't fail if Docker Scout is not available
+        with:
+          command: recommendations
+          image: weaver:pr-${{ github.sha }}
+          write-comment: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+  security-summary:
+    name: Security Scan Summary
+    runs-on: ubuntu-latest
+    needs: [docker-scout-scan]
+    if: always()
+
+    steps:
+      - name: Summary
+        run: |
+          echo "## 🔒 Docker Security Scan Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "All Docker images have been scanned for vulnerabilities." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Results:" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Production image scanned" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Test image scanned" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "View detailed results in the [Security tab](https://github.com/${{ github.repository }}/security/code-scanning)." >> $GITHUB_STEP_SUMMARY

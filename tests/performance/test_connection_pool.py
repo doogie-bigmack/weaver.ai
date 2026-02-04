@@ -14,6 +14,8 @@ from weaver_ai.redis.connection_pool import (
     init_redis_pool,
 )
 
+pytestmark = pytest.mark.integration  # All tests in this file require Redis
+
 
 @pytest.fixture
 async def redis_pool():

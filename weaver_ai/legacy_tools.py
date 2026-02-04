@@ -103,7 +103,8 @@ class PythonEvalTool(Tool):
 
 
 def create_python_eval_server(server_id: str, key: str) -> MCPServer:
-    server = MCPServer(server_id, key)
+    # Use HS256 (symmetric key) for simplicity in tests, not RS256
+    server = MCPServer(server_id, key, use_rs256=False, use_redis_nonces=False)
     tool = PythonEvalTool()
     spec = ToolSpec(
         name=tool.name, description=tool.description, input_schema={}, output_schema={}

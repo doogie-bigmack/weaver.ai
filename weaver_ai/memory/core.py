@@ -610,3 +610,50 @@ class AgentMemory:
     async def update_semantic(self, key: str, value: Any):
         """Update semantic memory (test compatibility)."""
         await self.add_semantic(key, value)
+
+    async def add_item(self, item: dict | Any, item_type: str = "short_term") -> bool:
+        """Add memory item (test compatibility).
+
+        Args:
+            item: Item to store (can be dict with 'key' and 'value' or any value)
+            item_type: Type of memory (short_term, long_term, episodic, semantic)
+
+        Returns:
+            True if item was added successfully
+        """
+        # Extract key and value from item
+        if isinstance(item, dict) and "key" in item and "value" in item:
+            key = item["key"]
+            value = item["value"]
+            importance = item.get("importance", 1.0)
+        elif isinstance(item, dict) and "key" in item:
+            # Assume the whole dict is the value if no 'value' key
+            key = item["key"]
+            value = item
+            importance = item.get("importance", 1.0)
+        else:
+            # Generate a key if item is not a dict
+            key = f"auto_{id(item)}"
+            value = item
+            importance = 1.0
+
+        await self.remember(key, value, memory_type=item_type, importance=importance)
+        return True
+
+    async def search(
+        self,
+        query: str | None = None,
+        memory_types: list[str] | None = None,
+        limit: int = 10,
+    ) -> list[MemoryItem]:
+        """Search memories (alias for recall for compatibility).
+
+        Args:
+            query: Search query (None = get all)
+            memory_types: Memory types to search (None = all)
+            limit: Maximum results
+
+        Returns:
+            List of memory items
+        """
+        return await self.recall(query=query, memory_types=memory_types, limit=limit)

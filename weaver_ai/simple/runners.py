@@ -63,42 +63,10 @@ async def run(agent_or_flow: Callable | Flow, input_data: Any, **kwargs) -> Any:
         # Run the flow
         return await agent_or_flow.run(input_data)
     elif hasattr(agent_or_flow, "_agent_class"):
-        # Run a single agent
-        from pydantic import BaseModel, Field
-
-        from weaver_ai.events import Event, EventMetadata
-
-        # Create a simple wrapper for any data type
-        class SimpleData(BaseModel):
-            value: Any = Field(default=None)
-
-        # Create agent instance
-        agent_class = agent_or_flow._agent_class
-        # agent_config = agent_or_flow._agent_config  # Available if needed
-
-        # Create a minimal agent instance
-        # Note: The agent_class already has func and config embedded
-        agent = agent_class()
-
-        # Wrap the input data if it's not already a BaseModel
-        if isinstance(input_data, BaseModel):
-            event_data = input_data
-        else:
-            event_data = SimpleData(value=input_data)
-
-        # Create event with proper structure - convert BaseModel to dict
-        event = Event(
-            event_type=event_data.__class__.__name__,
-            data=(
-                event_data.model_dump()
-                if isinstance(event_data, BaseModel)
-                else event_data
-            ),
-            metadata=EventMetadata(event_id="simple_run", source_agent="simple_runner"),
-        )
-
-        # Process and return result
-        return await agent.process(event)
+        # Run a single agent - call the decorated function directly
+        # This preserves the simple interface where inputs and outputs
+        # match the function signature exactly
+        return await agent_or_flow(input_data)
     elif asyncio.iscoroutinefunction(agent_or_flow):
         # Direct async function call
         return await agent_or_flow(input_data)
