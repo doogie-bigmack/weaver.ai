@@ -25,7 +25,7 @@ Comprehensive testing was performed on the weaver.ai system following security v
 ## Test Results by Category
 
 ### 1. Security Validation Tests (Unit)
-**File:** `/Users/damon.mcdougald/conductor/weaver.ai/tests/unit/test_security_validation.py`
+**File:** `/path/to/project
 
 **Status:** ✅ ALL PASSED (30/30)
 
@@ -79,7 +79,7 @@ Comprehensive testing was performed on the weaver.ai system following security v
 ---
 
 ### 2. Security Integration Tests
-**File:** `/Users/damon.mcdougald/conductor/weaver.ai/tests/integration/test_security_fixes.py`
+**File:** `/path/to/project
 
 **Status:** ✅ ALL PASSED (15/15)
 
@@ -110,7 +110,7 @@ Comprehensive testing was performed on the weaver.ai system following security v
 ---
 
 ### 3. JWT RS256 Migration Tests
-**File:** `/Users/damon.mcdougald/conductor/weaver.ai/tests/test_security_fixes.py`
+**File:** `/path/to/project
 
 **Status:** ⚠️ MOSTLY PASSED (14/19)
 
@@ -147,7 +147,7 @@ Comprehensive testing was performed on the weaver.ai system following security v
 ---
 
 ### 4. Additional Security Tests
-**File:** `/Users/damon.mcdougald/conductor/weaver.ai/test_security_features.py`
+**File:** `/path/to/project
 
 **Status:** ✅ ALL PASSED (3/3)
 
@@ -366,10 +366,10 @@ python3 -m pytest tests/unit/test_security_validation.py \
 
 ## Appendix: Test Files Analyzed
 
-1. `/Users/damon.mcdougald/conductor/weaver.ai/tests/test_security_fixes.py` (19 tests)
-2. `/Users/damon.mcdougald/conductor/weaver.ai/tests/unit/test_security_validation.py` (30 tests)
-3. `/Users/damon.mcdougald/conductor/weaver.ai/tests/integration/test_security_fixes.py` (15 tests)
-4. `/Users/damon.mcdougald/conductor/weaver.ai/test_security_features.py` (3 tests)
+1. `/path/to/project
+2. `/path/to/project
+3. `/path/to/project
+4. `/path/to/project
 5. Security-related tests across entire test suite (82 total)
 
 **Report Generated:** 2025-10-10
